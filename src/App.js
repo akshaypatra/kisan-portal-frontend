@@ -8,6 +8,7 @@ import PlotRegistration from './Pages/PlotRegistration';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
+import Dashboard from './Pages/Dashboard';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <section className="main-content">
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/plot-registration" element={<PlotRegistration />} />

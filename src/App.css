@@ -1,2 +1,37 @@
 @import "leaflet/dist/leaflet.css";
 @import "leaflet-draw/dist/leaflet.draw.css";
+
+
+/* Navbar CSS */
+
+.navbar-container{
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding-left:30px;
+    padding-right: 100px;  
+}
+
+
+
+@media (max-width: 768px) {
+    .navbar-container{
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        height: auto !important;
+        padding: 10px 10px !important;
+        position: relative !important;
+        box-sizing: border-box !important;
+    }
+    .menu-toggle {
+    display: block !important;
+    justify-content: center;
+    }
+
+    #navabar-inner-container {
+        flex-direction: column !important;
+    }
+
+
+}

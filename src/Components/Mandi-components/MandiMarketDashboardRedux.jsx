@@ -22,6 +22,8 @@ export default function MandiMarketDashboardRedux() {
   const { records, total, loading, error } = useSelector((s) => s.mandi || { records: [], total: 0, loading: false, error: null });
 
   // UI / query state
+
+  // eslint-disable-next-line
   const [apiKey, setApiKey] = useState('579b464db66ec23bdd0000016b29150f2bac4f8057aa9349a264fa7d');
   const [format, setFormat] = useState('json'); // xml/json/csv
   const [offset, setOffset] = useState(0);

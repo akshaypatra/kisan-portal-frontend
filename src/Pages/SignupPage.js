@@ -1,287 +1,154 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import { User, Mail, Lock, Sprout } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
 
-function SignupPage() {
+export default function SignupPage() {
+  const [credentials, setCredentials] = useState({ name: '', email: '', password: '' });
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    farmer_name: '',
-    phone_number: '',
-    aadhaar_card: '',
-    kcc_id: '',
-    email: '',
-    password: '',
-    confirm_password: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-    setError('');
+  const handleSignup = () => {
+    if (credentials.name && credentials.email && credentials.password) {
+      // replace with real signup flow
+      navigate('/register');
+    } else {
+      alert('कृपया सभी फील्ड भरें / Please fill all fields');
+    }
   };
 
-  const validateForm = () => {
-    // Phone validation
-    if (!/^[0-9]{10}$/.test(formData.phone_number)) {
-      setError('Please enter a valid 10-digit phone number');
-      return false;
-    }
-
-    // Aadhaar validation
-    if (!/^[0-9]{12}$/.test(formData.aadhaar_card)) {
-      setError('Please enter a valid 12-digit Aadhaar number');
-      return false;
-    }
-
-    // Email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
-
-    // Password validation
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return false;
-    }
-
-    if (formData.password !== formData.confirm_password) {
-      setError('Passwords do not match');
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    if (!validateForm()) {
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-    // API call to backend
-      const response = await axios.post('https://your-api-domain.com/api/signup', {
-        farmer_name: formData.farmer_name,
-        phone_number: formData.phone_number,
-        aadhaar_card: formData.aadhaar_card,
-        kcc_id: formData.kcc_id,
-        email: formData.email,
-        password: formData.password
-      });
-
-    // CHANGE: Store farmer_id and token immediately after signup
-      const { farmer_id, token, farmer_name } = response.data;
-    
-      localStorage.setItem('farmer_token', token);
-      localStorage.setItem('farmer_id', farmer_id);
-      localStorage.setItem('farmer_name', farmer_name);
-
-      setSuccess(`✅ Registration Successful! Your Farmer ID: ${farmer_id}`);
-    
-    // Redirect to profile page to complete profile
-      setTimeout(() => {
-        navigate('/profile');  // CHANGE: Go to profile instead of login
-      }, 2000);
-    
-    } catch (err) {
-      setError(
-        err.response?.data?.message || 
-        'Registration failed. Please try again.'
-      );
-    } finally {
-      setLoading(false);
-    }
+  const onKeyDown = (e) => {
+    if (e.key === 'Enter') handleSignup();
   };
 
   return (
-    <div className="auth-container">
-      <Container>
-        <Row className="justify-content-center">
-          <Col lg={6} md={8}>
-            <Card className="auth-card">
-              {/* Header */}
-              <div className="auth-header">
-                <div className="farm-icon">🌾</div>
-                <h2 className="mb-0">किसान पंजीकरण</h2>
-                <p className="mb-0">Farmer Registration</p>
+    <div
+      className="min-vh-100 d-flex align-items-center justify-content-center"
+      style={{
+        background:
+          'linear-gradient(135deg, #16a34a 0%, #10b981 40%, #f59e0b 100%)',
+        padding: '1rem',
+      }}
+    >
+      <div className="container" style={{ maxWidth: 920 }}>
+        <div className="row justify-content-center">
+          <div className="col-12 col-md-8">
+            <div className="text-center mb-4">
+              <div
+                className="bg-white rounded-circle mx-auto d-flex align-items-center justify-content-center shadow"
+                style={{ width: 96, height: 96 }}
+              >
+                <Sprout size={48} className="text-success" />
               </div>
+              <h1 className="display-6 fw-bold text-white mt-3">किसान पोर्टल</h1>
+            </div>
 
-              {/* Body */}
-              <div className="auth-body">
-                {error && (
-                  <Alert variant="danger" className="alert-custom" dismissible onClose={() => setError('')}>
-                    {error}
-                  </Alert>
-                )}
-                
-                {success && (
-                  <Alert variant="success" className="alert-custom">
-                    {success}
-                  </Alert>
-                )}
+            <div className="card shadow-lg rounded-4 overflow-hidden">
+              <div className="row g-0">
+                <div className="col-12 col-lg-7 p-4" style={{ background: 'white' }}>
+                  <div className="d-flex gap-2 mb-3">
+                    <Link
+                      to="/login"
+                      className="btn btn-light flex-fill text-success fw-semibold"
+                      role="button"
+                    >
+                      Login
+                    </Link>
+                    <button className="btn btn-success flex-fill fw-semibold">Sign Up</button>
+                  </div>
 
-                <Form onSubmit={handleSubmit}>
-                  {/* Farmer Name */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>
-                      <span className="text-success">👤</span> Farmer Name / किसान का नाम *
-                    </Form.Label>
-                    <Form.Control
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
+                      <User size={18} />
+                      Full Name / पूरा नाम
+                    </label>
+                    <input
                       type="text"
-                      name="farmer_name"
-                      placeholder="Enter full name"
-                      value={formData.farmer_name}
-                      onChange={handleChange}
-                      required
+                      className="form-control border-success"
+                      placeholder="Enter your name"
+                      value={credentials.name}
+                      onChange={(e) => setCredentials({ ...credentials, name: e.target.value })}
+                      onKeyDown={onKeyDown}
+                      aria-label="full name"
                     />
-                  </Form.Group>
+                  </div>
 
-                  {/* Phone Number */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>
-                      <span className="text-success">📱</span> Phone Number / मोबाइल नंबर *
-                    </Form.Label>
-                    <Form.Control
-                      type="tel"
-                      name="phone_number"
-                      placeholder="10-digit mobile number"
-                      value={formData.phone_number}
-                      onChange={handleChange}
-                      maxLength="10"
-                      required
-                    />
-                  </Form.Group>
-
-                  {/* Aadhaar Card */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>
-                      <span className="text-success">🆔</span> Aadhaar Card / आधार कार्ड *
-                    </Form.Label>
-                    <Form.Control
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
+                      <Mail size={18} />
+                      Email / मोबाइल
+                    </label>
+                    <input
                       type="text"
-                      name="aadhaar_card"
-                      placeholder="12-digit Aadhaar number"
-                      value={formData.aadhaar_card}
-                      onChange={handleChange}
-                      maxLength="12"
-                      required
+                      className="form-control border-success"
+                      placeholder="Enter email or mobile"
+                      value={credentials.email}
+                      onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
+                      onKeyDown={onKeyDown}
+                      aria-label="email or mobile"
                     />
-                  </Form.Group>
+                  </div>
 
-                  {/* KCC ID */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>
-                      <span className="text-success">💳</span> KCC ID (Kisan Credit Card) *
-                    </Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="kcc_id"
-                      placeholder="Enter KCC ID"
-                      value={formData.kcc_id}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-
-                  {/* Email */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>
-                      <span className="text-success">📧</span> Email / ईमेल *
-                    </Form.Label>
-                    <Form.Control
-                      type="email"
-                      name="email"
-                      placeholder="Enter email address"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-
-                  {/* Password */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>
-                      <span className="text-success">🔒</span> Password / पासवर्ड *
-                    </Form.Label>
-                    <Form.Control
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
+                      <Lock size={18} />
+                      Password / पासवर्ड
+                    </label>
+                    <input
                       type="password"
-                      name="password"
-                      placeholder="Create password (min 6 characters)"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
+                      className="form-control border-success"
+                      placeholder="Create password"
+                      value={credentials.password}
+                      onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                      onKeyDown={onKeyDown}
+                      aria-label="password"
                     />
-                  </Form.Group>
+                  </div>
 
-                  {/* Confirm Password */}
-                  <Form.Group className="mb-4">
-                    <Form.Label>
-                      <span className="text-success">🔒</span> Confirm Password / पासवर्ड की पुष्टि करें *
-                    </Form.Label>
-                    <Form.Control
-                      type="password"
-                      name="confirm_password"
-                      placeholder="Re-enter password"
-                      value={formData.confirm_password}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-
-                  {/* Submit Button */}
-                  <Button 
-                    variant="success" 
-                    type="submit" 
-                    className="w-100 btn-auth"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Spinner animation="border" size="sm" className="me-2" />
-                        Registering...
-                      </>
-                    ) : (
-                      'Register / पंजीकरण करें'
-                    )}
-                  </Button>
-                </Form>
-
-                {/* Login Link */}
-                <div className="auth-link">
-                  <p className="mb-0">
-                    Already registered? / पहले से पंजीकृत? <Link to="/login">Login here</Link>
-                  </p>
+                  <button onClick={handleSignup} className="btn btn-success w-100 fw-bold mt-2">
+                    Sign Up / साइन अप करें
+                  </button>
                 </div>
-              </div>
-            </Card>
 
-            {/* Government Footer */}
-            <div className="gov-footer">
-              <div className="d-flex align-items-center justify-content-center">
-                <div className="me-3" style={{ fontSize: '2rem' }}>🇮🇳</div>
-                <div className="text-start">
-                  <strong>Ministry of Agriculture & Farmers Welfare</strong>
-                  <div><small>कृषि एवं किसान कल्याण मंत्रालय</small></div>
-                  <div><small>Government of India</small></div>
+                <div
+                  className="col-12 col-lg-5 p-4 d-flex flex-column justify-content-center"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(16,185,129,0.08), rgba(245,158,11,0.06))',
+                    borderLeft: '1px solid rgba(0,0,0,0.04)',
+                  }}
+                >
+                  <div className="text-center mb-3">
+                    <div className="d-flex align-items-center justify-content-center gap-2 mb-2">
+                      <div
+                        className="rounded-circle"
+                        style={{
+                          width: 36,
+                          height: 36,
+                          background: 'linear-gradient(135deg,#f97316,#10b981)',
+                        }}
+                      />
+                      <h5 className="mb-0 text-success fw-bold">
+                        Ministry of Agriculture &amp; Farmers Welfare
+                      </h5>
+                    </div>
+                    <p className="text-muted small mb-0">कृषि एवं किसान कल्याण मंत्रालय</p>
+                  </div>
+
+                  <hr />
+
+                  <div className="small text-muted">
+                    <p className="mb-1">
+                      सहायता चाहिए? संपर्क करें: <a href="#!" className="text-decoration-none">kisan-portal@example.com</a>
+                    </p>
+                    <p className="mb-0">Version: 1.0</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </Col>
-        </Row>
-      </Container>
+
+            <div className="text-center mt-3 text-white-50 small">© {new Date().getFullYear()} किसान पोर्टल</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
-export default SignupPage;

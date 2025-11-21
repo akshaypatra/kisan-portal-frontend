@@ -9,6 +9,10 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import Dashboard from './Pages/Dashboard';
+import { Provider } from 'react-redux'
+import MandiMarketDashboardRedux from './Components/Mandi-components/MandiMarketDashboardRedux'
+import store from './Components/Mandi-components/store'
+import News from './Components/News-component/News';
 
 function App() {
   return (
@@ -22,6 +26,13 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/plot-registration" element={<PlotRegistration />} />
+            <Route path="/mandi-prices" 
+                  element={<Provider store={store}>
+                      <MandiMarketDashboardRedux />
+                      </Provider>} >
+            </Route>
+            <Route path="/news" element={<News/>} />
+            
           </Routes>
         </section>
       </div>

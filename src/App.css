@@ -35,3 +35,16 @@
 
 
 }
+
+
+/* 2. Dashboard */
+
+.dashboard-weather-widget-container{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 30px;
+}
+
+
+/* 2.1 Mandi Prices */

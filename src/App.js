@@ -16,6 +16,7 @@ import News from './Components/News-component/News';
 import ManageFields from './Components/Plots-component/ManageFields';
 import MarketPage from './Pages/MarketPage';
 import CropsPage from './Pages/CropsPage';
+import ProfilePage from './Pages/ProfilePage';
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
             <Route path='/manage-fields' element={<ManageFields/>}></Route>
             <Route path="/market" element={<MarketPage/>} />
             <Route path="/crop-detail" element={<CropsPage/>} />
+            <Route path='/profile' element={<ProfilePage/>}></Route>
           </Routes>
         </section>
       </div>

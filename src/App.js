@@ -13,6 +13,9 @@ import { Provider } from 'react-redux'
 import MandiMarketDashboardRedux from './Components/Mandi-components/MandiMarketDashboardRedux'
 import store from './Components/Mandi-components/store'
 import News from './Components/News-component/News';
+import ManageFields from './Components/Plots-component/ManageFields';
+import MarketPage from './Pages/MarketPage';
+import CropsPage from './Pages/CropsPage';
 
 function App() {
   return (
@@ -32,7 +35,9 @@ function App() {
                       </Provider>} >
             </Route>
             <Route path="/news" element={<News/>} />
-            
+            <Route path='/manage-fields' element={<ManageFields/>}></Route>
+            <Route path="/market" element={<MarketPage/>} />
+            <Route path="/crop-detail" element={<CropsPage/>} />
           </Routes>
         </section>
       </div>

@@ -47,4 +47,13 @@
 }
 
 
-/* 2.1 Mandi Prices */
+#analytics-section-card{
+    background-color: rgba(188, 242, 188, 0.515);
+    padding:20px;
+    border-radius: 30px;
+}
+#fields-card{
+    background-color: rgba(239, 208, 180, 0.515);
+    padding:20px;
+    border-radius: 30px;
+}

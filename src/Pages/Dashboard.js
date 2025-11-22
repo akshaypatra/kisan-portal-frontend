@@ -1,7 +1,43 @@
-import React from "react";
+import React, { useMemo } from "react";
 import WeatherWidget from "../Components/Weather-component/WeatherWidget";
 import { useNavigate } from "react-router-dom";
-import { FaSeedling, FaNewspaper, FaStore, FaChartLine } from "react-icons/fa";
+import {
+  FaSeedling,
+  FaNewspaper,
+  FaStore,
+  FaChartLine,
+  FaMap,
+  FaLeaf,
+  FaRulerCombined,
+  FaClock,
+  FaTractor,
+  FaChartBar,
+  FaMapMarkedAlt,
+} from "react-icons/fa";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+
+/**
+ * Dashboard:
+ * - Top analytics (KPIs)
+ * - Total Production graph (line+bar)
+ * - Crop share pie
+ * - Then "Your Fields" cards (as previously requested)
+ *
+ * Note: ensure `recharts` is installed: `npm i recharts`
+ */
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -33,71 +69,508 @@ export default function Dashboard() {
     },
   ];
 
+  // ---------- SAMPLE DATA (replace with API results) ----------
+  // Each field: crops: { name, ratio (percent of field), yield_t_per_ha }
+  const sampleFields = useMemo(
+  () => [
+    {
+      id: 1,
+      name: "Field A - Riverside",
+      area_ha: 2.4,
+      stage: "Flowering",
+      crops: [
+        { name: "Wheat", ratio: 60, yield_t_per_ha: 3.2 },
+        { name: "Mustard", ratio: 40, yield_t_per_ha: 1.1 },
+      ],
+      last_updated: "2025-11-20",
+    },
+    {
+      id: 2,
+      name: "North Plot",
+      area_ha: 1.1,
+      stage: "Sowing",
+      crops: [{ name: "Maize", ratio: 100, yield_t_per_ha: 5.0 }],
+      last_updated: "2025-11-18",
+    },
+    {
+      id: 3,
+      name: "South Orchard",
+      area_ha: 0.8,
+      stage: "Harvesting",
+      crops: [
+        { name: "Tomato", ratio: 70, yield_t_per_ha: 25.0 },
+        { name: "Chili", ratio: 20, yield_t_per_ha: 4.0 },
+        { name: "Basil", ratio: 10, yield_t_per_ha: 1.2 },
+      ],
+      last_updated: "2025-11-21",
+    },
+    {
+      id: 4,
+      name: "West Meadow",
+      area_ha: 1.9,
+      stage: "Growing",
+      crops: [
+        { name: "Wheat", ratio: 50, yield_t_per_ha: 3.0 },
+        { name: "Barley", ratio: 50, yield_t_per_ha: 2.2 },
+      ],
+      last_updated: "2025-11-19",
+    },
+  ],
+  []
+);
+
+
+  // ---------- UI helpers ----------
+  const cropColors = [
+    "#7BB661",
+    "#F4A261",
+    "#E76F51",
+    "#2A9D8F",
+    "#E9C46A",
+    "#264653",
+    "#8AB6D6",
+    "#A873FF",
+  ];
+  const getCropColor = (i) => cropColors[i % cropColors.length];
+
+  // ---------- COMPUTED ANALYTICS ----------
+  // Total fields & area
+  const analytics = useMemo(() => {
+    const totalFields = sampleFields.length;
+    const totalArea = sampleFields.reduce((s, f) => s + (f.area_ha || 0), 0);
+
+    // Compute estimated production per field and aggregate per crop
+    const cropAggregate = {}; // cropName -> total production (tons)
+    let totalProduction = 0; // tons
+
+    for (const f of sampleFields) {
+      for (const c of f.crops) {
+        const cRatio = c.ratio ?? 100;
+        const areaForCrop = (f.area_ha * cRatio) / 100.0; // hectares
+        const estimatedProduction = (areaForCrop * (c.yield_t_per_ha || 0)); // tons
+        totalProduction += estimatedProduction;
+
+        cropAggregate[c.name] = (cropAggregate[c.name] || 0) + estimatedProduction;
+      }
+    }
+
+    // average yield per ha (weighted)
+    const avgYieldPerHa = totalArea > 0 ? totalProduction / totalArea : 0;
+
+    return {
+      totalFields,
+      totalArea: +totalArea.toFixed(2),
+      totalProduction: +totalProduction.toFixed(2),
+      avgYieldPerHa: +avgYieldPerHa.toFixed(2),
+      cropAggregate,
+    };
+  }, [sampleFields]);
+
+  // ---------- SAMPLE MONTHLY PRODUCTION (for timeseries) ----------
+  // If you have real monthly data use that. Here we create a sample timeseries
+  const monthlyProduction = useMemo(() => {
+    // sample: last 6 months — make trend from totalProduction
+    const base = analytics.totalProduction || 20;
+    const months = [
+      "Jun 2025",
+      "Jul 2025",
+      "Aug 2025",
+      "Sep 2025",
+      "Oct 2025",
+      "Nov 2025",
+    ];
+    // create gentle variation
+    return months.map((m, i) => {
+      const factor = 0.75 + (i / (months.length - 1)) * 0.6; // 0.75 -> 1.35
+      const prod = +(base * factor * (0.6 + Math.random() * 0.8)).toFixed(2);
+      return { month: m, production_t: prod, forecast_t: +(prod * 1.05).toFixed(2) };
+    });
+  }, [analytics.totalProduction]);
+
+  // Pie chart data from cropAggregate
+  const cropPieData = useMemo(() => {
+    const entries = Object.entries(analytics.cropAggregate || {});
+    return entries.map(([name, prod]) => ({ name, value: +prod.toFixed(2) }));
+  }, [analytics.cropAggregate]);
+
+  // ---------- RENDER ----------
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-weather-widget-container">
-      <WeatherWidget />
+    <div className="dashboard-container p-3">
+      <div className="dashboard-weather-widget-container mb-3">
+        <WeatherWidget />
       </div>
-      <div className="dashboard-button-container">
-              <style>
+
+      <div className="dashboard-button-container mb-3">
+        <style>
           {`
-          /* Make all cards equal height */
+          /* Buttons */
           .dash-btn-card {
-            height: 130px;
-            border-radius: 20px;
+            height: 110px;
+            border-radius: 16px;
             cursor: pointer;
             transition: 0.25s ease;
             display: flex;
             align-items: center;
             justify-content: center;
           }
+          .dash-btn-card:hover { transform: scale(1.04); }
 
-          .dash-btn-card:hover {
-            transform: scale(1.06);
-          }
-
-          /* Make inner content centered & consistent */
           .dash-btn-body {
-            border-radius: 20px;
-            padding: 24px 10px;
+            border-radius: 16px;
+            padding: 18px 10px;
             height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
           }
+          .dash-btn-body h6 { margin-top: 8px; font-weight: 700; }
 
-          /* Text and icon alignment */
-          .dash-btn-body h6 {
-            margin-top: 8px;
-            font-weight: 700;
+          /* Analytics area */
+          .analytics-section {
+            margin-top: 18px;
+            margin-bottom: 18px;
           }
-        `}
-          </style>
 
-          <div className="container mt-4">
-            <div className="row g-4 justify-content-center">
-              {buttons.map((btn, idx) => (
-                <div className="col-6 col-md-3 d-flex" key={idx}>
+          .kpi-card {
+            border-radius: 12px;
+            padding: 14px;
+            background: #fff;
+            box-shadow: 0 6px 18px rgba(15,40,20,0.04);
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+            min-height: 100%;
+          }
+          .kpi-value { font-size: 20px; font-weight:800; }
+          .kpi-label  { color: #6c757d; font-size: 13px; }
+
+          /* Charts container */
+          .charts-row {
+            margin-top: 12px;
+          }
+
+          /* keep fields cards look as before (copied & slightly adjusted) */
+          .field-card {
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform .15s, box-shadow .15s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: linear-gradient(180deg, #ffffff, #fbfffb);
+          }
+          .field-card:hover { transform: translateY(-6px); box-shadow: 0 10px 30px rgba(15,40,20,0.08); }
+
+          .field-top {
+            display:flex;
+            justify-content: space-between;
+            align-items:center;
+            padding: 12px 14px;
+            background: linear-gradient(90deg, rgba(39, 174, 96,0.06), rgba(46, 204, 113,0.02));
+          }
+          .field-body { padding: 14px; flex: 1 1 auto; display:flex; flex-direction:column; gap:10px; }
+          .crop-badges { display:flex; gap:8px; flex-wrap:wrap; }
+          .ratio-bar { display:flex; height: 18px; border-radius: 8px; overflow: hidden; background: #f1f1f1; border: 1px solid rgba(0,0,0,0.04); }
+          .ratio-segment { display:flex; align-items:center; justify-content:center; font-size: 12px; color: rgba(255,255,255,0.95); font-weight:600; white-space:nowrap; padding: 0 6px; }
+          .field-meta { display:flex; gap:12px; align-items:center; color: #6c757d; font-size: 13px; }
+        `}
+        </style>
+
+        <div className="container">
+          <div className="row g-4 justify-content-center">
+            {buttons.map((btn, idx) => (
+              <div className="col-6 col-md-3 d-flex" key={idx}>
+                <div
+                  className="card shadow-sm w-100 dash-btn-card"
+                  onClick={() => navigate(btn.path)}
+                >
                   <div
-                    className="card shadow-sm w-100 dash-btn-card"
-                    onClick={() => navigate(btn.path)}
+                    className="dash-btn-body text-white w-100"
+                    style={{ background: btn.color }}
                   >
-                    <div
-                      className="dash-btn-body text-white w-100"
-                      style={{ background: btn.color }}
-                    >
-                      <div>{btn.icon}</div>
-                      <h6>{btn.name}</h6>
+                    <div>{btn.icon}</div>
+                    <h6>{btn.name}</h6>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ---------- OVERALL ANALYTICS ---------- */}
+      <div className="analytics-section">
+        
+        <div className="container" id="analytics-section-card">
+          <h3>< FaChartBar/> Analytics</h3>
+          {/* KPI cards */}
+          <div className="row g-3">
+            <div className="col-6 col-md-3">
+              <div className="kpi-card">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <div className="kpi-value">{analytics.totalFields}</div>
+                    <div className="kpi-label">Total fields</div>
+                  </div>
+                  <div style={{ fontSize: 22, color: "#2f7a3a" }}>
+                    <FaMap />
+                  </div>
+                </div>
+                <small className="text-muted">Quick count of your fields</small>
+              </div>
+            </div>
+
+            <div className="col-6 col-md-3">
+              <div className="kpi-card">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <div className="kpi-value">{analytics.totalArea} ha</div>
+                    <div className="kpi-label">Total area</div>
+                  </div>
+                  <div style={{ fontSize: 22, color: "#1e90ff" }}>
+                    <FaRulerCombined />
+                  </div>
+                </div>
+                <small className="text-muted">Sum of all fields' areas</small>
+              </div>
+            </div>
+
+            <div className="col-6 col-md-3">
+              <div className="kpi-card">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <div className="kpi-value">{analytics.totalProduction} t</div>
+                    <div className="kpi-label">Est. total production</div>
+                  </div>
+                  <div style={{ fontSize: 22, color: "#f39c12" }}>
+                    <FaTractor />
+                  </div>
+                </div>
+                <small className="text-muted">Estimated (area × crop yield)</small>
+              </div>
+            </div>
+
+            <div className="col-6 col-md-3">
+              <div className="kpi-card">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <div className="kpi-value">{analytics.avgYieldPerHa} t/ha</div>
+                    <div className="kpi-label">Avg yield / ha</div>
+                  </div>
+                  <div style={{ fontSize: 22, color: "#6f42c1" }}>
+                    <FaLeaf />
+                  </div>
+                </div>
+                <small className="text-muted">Weighted average yield</small>
+              </div>
+            </div>
+          </div>
+
+          {/* charts row */}
+          <div className="row charts-row g-4 align-items-center">
+            <div className="col-12 col-lg-7">
+              <div className="card p-3 shadow-sm" style={{ borderRadius: 12 }}>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <div>
+                    <strong>Total production</strong>
+                    <div className="text-muted" style={{ fontSize: 13 }}>
+                      Trend over last months (tons)
+                    </div>
+                  </div>
+                  <div className="text-muted" style={{ fontSize: 13 }}>
+                    Estimated: <strong>{analytics.totalProduction} t</strong>
+                  </div>
+                </div>
+
+                <div style={{ width: "100%", height: 260 }}>
+                  <ResponsiveContainer>
+                    <LineChart data={monthlyProduction} margin={{ top: 6, right: 18, left: 0, bottom: 6 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="production_t"
+                        stroke="#2f7a3a"
+                        strokeWidth={3}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 6 }}
+                      />
+                      <Bar dataKey="forecast_t" barSize={18} fill="#82ca9d" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-lg-5">
+              <div className="card p-3 shadow-sm" style={{ borderRadius: 12 }}>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <div>
+                    <strong>Crop share (by production)</strong>
+                    <div className="text-muted" style={{ fontSize: 13 }}>
+                      Distribution of estimated production
+                    </div>
+                  </div>
+                  <div className="text-muted" style={{ fontSize: 13 }}>
+                    Total crops: <strong>{Object.keys(analytics.cropAggregate).length}</strong>
+                  </div>
+                </div>
+
+                <div style={{ width: "100%", height: 260 }}>
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={cropPieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        innerRadius={38}
+                        label={(entry) => `${entry.name} (${Math.round((entry.value / (analytics.totalProduction || 1)) * 100)}%)`}
+                      >
+                        {cropPieData.map((entry, idx) => (
+                          <Cell key={`cell-${idx}`} fill={getCropColor(idx)} />
+                        ))}
+                      </Pie>
+                      <Legend verticalAlign="bottom" height={36} />
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> {/* analytics-section */}
+
+      {/* ---------- AVAILABLE FIELDS ---------- */}
+      <div className="dashobard-available-Fields-container fields-section">
+        <div className="container" id="fields-card">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h4 className="m-0"><FaMap style={{ marginRight: 8 }} /> Your Fields</h4>
+            <button
+            className="btn btn-success d-flex align-items-center gap-2 shadow-sm"
+            style={{
+              background: "linear-gradient(135deg, #4CAF50, #2E7D32)",
+              borderRadius: "12px",
+              padding: "12px 20px",
+              fontSize: "16px",
+              fontWeight: "600",
+              transition: "0.3s ease",
+            }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+              onClick={() => navigate("/plot-registration")}
+            >
+              <FaMapMarkedAlt size={20} /> Register New Plot
+            </button>
+          </div>
+
+          <div className="row g-4">
+            {sampleFields.map((field, fIdx) => {
+              const totalRatio = field.crops.reduce((s, c) => s + (c.ratio || 0), 0) || 100;
+              return (
+                <div key={field.id} className="col-12 col-md-6 col-lg-4 d-flex">
+                  <div className="card field-card shadow-sm w-100">
+                    <div className="field-top">
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{
+                          width:46, height:46, borderRadius:12, background:"#f3fbf2",
+                          display:"flex", alignItems:"center", justifyContent:"center", color:"#2f7a3a"
+                        }}>
+                          <FaLeaf size={20} />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight:700 }}>{field.name}</div>
+                          <div style={{ fontSize:13, color:"#6c757d" }}>{field.stage}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontSize:14, fontWeight:700 }}>
+                          {field.area_ha} ha
+                        </div>
+                        <div style={{ fontSize:12, color:"#6c757d" }}>
+                          updated {field.last_updated}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="field-body">
+                      <div className="crop-badges">
+                        {field.crops.map((c, i) => (
+                          <span
+                            key={i}
+                            className="badge rounded-pill"
+                            style={{
+                              background: getCropColor((fIdx + i)),
+                              color: "#fff",
+                              padding: "6px 10px",
+                              fontWeight:700,
+                              boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                            }}
+                          >
+                            {c.name} • {c.ratio}%
+                          </span>
+                        ))}
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: 13, marginBottom: 6, color: "#495057", fontWeight:700 }}>
+                          Crop mix
+                        </div>
+
+                        <div className="ratio-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                          {field.crops.map((c, i) => {
+                            const widthPercent = Math.round((c.ratio / totalRatio) * 100);
+                            return (
+                              <div
+                                key={i}
+                                className="ratio-segment"
+                                style={{
+                                  width: `${widthPercent}%`,
+                                  background: getCropColor((fIdx + i)),
+                                  fontSize: 12,
+                                  justifyContent: widthPercent > 10 ? "center" : "flex-end",
+                                  paddingLeft: widthPercent > 10 ? 0 : 6,
+                                }}
+                                title={`${c.name}: ${c.ratio}%`}
+                              >
+                                {widthPercent > 8 ? `${c.ratio}%` : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="field-meta">
+                        <div className="d-flex align-items-center" title="Stage">
+                          <FaClock style={{ marginRight: 8 }} /> <small style={{ marginRight:6 }}>{field.stage}</small>
+                        </div>
+                        <div className="d-flex align-items-center" title="Area">
+                          <FaRulerCombined style={{ marginRight: 8 }} /> <small>{field.area_ha} ha</small>
+                        </div>
+                        <div className="d-flex align-items-center" title="Number of crops">
+                          <FaSeedling style={{ marginRight: 8 }} /> <small>{field.crops.length} crop{field.crops.length>1?"s":""}</small>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                        <button className="btn btn-sm btn-outline-success" onClick={()=>{navigate("/manage-fields")}}>Manage</button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
+        </div>
       </div>
-
-      <div className="dashboard-avaialable-plots"></div>
     </div>
   );
 }

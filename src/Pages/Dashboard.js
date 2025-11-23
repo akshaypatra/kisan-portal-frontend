@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import WeatherWidget from "../Components/Weather-component/WeatherWidget";
 import { useNavigate } from "react-router-dom";
 import {
@@ -39,8 +39,14 @@ import {
  * Note: ensure `recharts` is installed: `npm i recharts`
  */
 
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000/api/auth";
+const SQM_PER_ACRE = 4046.85642;
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const farmerId = Number(localStorage.getItem("farmer_id")) || 1;
+  const [fields, setFields] = useState([]);
+  const [loadingPlots, setLoadingPlots] = useState(false);
 
   const buttons = [
     {
@@ -71,53 +77,116 @@ export default function Dashboard() {
 
   // ---------- SAMPLE DATA (replace with API results) ----------
   // Each field: crops: { name, ratio (percent of field), yield_t_per_ha }
-  const sampleFields = useMemo(
-  () => [
-    {
-      id: 1,
-      name: "Field A - Riverside",
-      area_ha: 2.4,
-      stage: "Flowering",
-      crops: [
-        { name: "Wheat", ratio: 60, yield_t_per_ha: 3.2 },
-        { name: "Mustard", ratio: 40, yield_t_per_ha: 1.1 },
-      ],
-      last_updated: "2025-11-20",
-    },
-    {
-      id: 2,
-      name: "North Plot",
-      area_ha: 1.1,
-      stage: "Sowing",
-      crops: [{ name: "Maize", ratio: 100, yield_t_per_ha: 5.0 }],
-      last_updated: "2025-11-18",
-    },
-    {
-      id: 3,
-      name: "South Orchard",
-      area_ha: 0.8,
-      stage: "Harvesting",
-      crops: [
-        { name: "Tomato", ratio: 70, yield_t_per_ha: 25.0 },
-        { name: "Chili", ratio: 20, yield_t_per_ha: 4.0 },
-        { name: "Basil", ratio: 10, yield_t_per_ha: 1.2 },
-      ],
-      last_updated: "2025-11-21",
-    },
-    {
-      id: 4,
-      name: "West Meadow",
-      area_ha: 1.9,
-      stage: "Growing",
-      crops: [
-        { name: "Wheat", ratio: 50, yield_t_per_ha: 3.0 },
-        { name: "Barley", ratio: 50, yield_t_per_ha: 2.2 },
-      ],
-      last_updated: "2025-11-19",
-    },
-  ],
-  []
-);
+  const baseSampleFields = useMemo(
+    () => [
+      {
+        id: 1,
+        name: "Field A - Riverside",
+        area_ha: 2.4,
+        stage: "Flowering",
+        crops: [
+          { name: "Wheat", ratio: 60, yield_t_per_ha: 3.2 },
+          { name: "Mustard", ratio: 40, yield_t_per_ha: 1.1 },
+        ],
+        last_updated: "2025-11-20",
+      },
+      {
+        id: 2,
+        name: "North Plot",
+        area_ha: 1.1,
+        stage: "Sowing",
+        crops: [{ name: "Maize", ratio: 100, yield_t_per_ha: 5.0 }],
+        last_updated: "2025-11-18",
+      },
+      {
+        id: 3,
+        name: "South Orchard",
+        area_ha: 0.8,
+        stage: "Harvesting",
+        crops: [
+          { name: "Tomato", ratio: 70, yield_t_per_ha: 25.0 },
+          { name: "Chili", ratio: 20, yield_t_per_ha: 4.0 },
+          { name: "Basil", ratio: 10, yield_t_per_ha: 1.2 },
+        ],
+        last_updated: "2025-11-21",
+      },
+      {
+        id: 4,
+        name: "West Meadow",
+        area_ha: 1.9,
+        stage: "Growing",
+        crops: [
+          { name: "Wheat", ratio: 50, yield_t_per_ha: 3.0 },
+          { name: "Barley", ratio: 50, yield_t_per_ha: 2.2 },
+        ],
+        last_updated: "2025-11-19",
+      },
+    ],
+    []
+  );
+
+  useEffect(() => {
+    setFields(baseSampleFields.map(normalizeSampleField));
+  }, [baseSampleFields]);
+
+  useEffect(() => {
+    fetchPlots();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function normalizeSampleField(f) {
+    const area_acres = (f.area_ha || 0) * 2.47105;
+    const crops = (f.crops || []).map((c) => {
+      const areaFromRatio = area_acres * ((c.ratio || 0) / 100);
+      return { ...c, area_acres: +areaFromRatio.toFixed(2), ratio: c.ratio ?? 0 };
+    });
+    return { ...f, area_acres: +area_acres.toFixed(2), crops };
+  }
+
+  function mapPlotToField(plot) {
+    const area_acres = plot.calculated_area_sqm ? +(plot.calculated_area_sqm / SQM_PER_ACRE).toFixed(2) : 0;
+    const cycles = (plot.cycles || []).filter((c) => c.status !== "Harvested");
+    const totalArea = area_acres || cycles.reduce((s, c) => s + (c.area_acres || 0), 0);
+    const crops = cycles.map((c) => {
+      const ratio = totalArea > 0 ? ((c.area_acres || 0) / totalArea) * 100 : 100;
+      const estYieldTPerHa = (c.area_acres || 0) > 0 ? ((c.harvested_qty_total || 0) / 1000) / ((c.area_acres || 0) * 0.404686) : 0;
+      return {
+        name: c.crop_name,
+        ratio: +ratio.toFixed(2),
+        yield_t_per_ha: +estYieldTPerHa.toFixed(2),
+        stage: c.status,
+        area_acres: c.area_acres,
+        harvests: c.harvests || [],
+        harvested_qty_total: c.harvested_qty_total || 0,
+        harvested_area_total: c.harvested_area_total || 0,
+      };
+    });
+    return {
+      id: `db-${plot.id}`,
+      name: plot.plot_name,
+      area_ha: area_acres * 0.404686,
+      area_acres,
+      stage: (plot.status && (plot.status.stage || plot.status.status)) || "Registered",
+      crops,
+      last_updated: plot.created_at ? plot.created_at.slice(0, 10) : "",
+    };
+  }
+
+  async function fetchPlots() {
+    setLoadingPlots(true);
+    try {
+      const res = await fetch(`${API_BASE}/with-cycles/${farmerId}`);
+      if (!res.ok) throw new Error("Failed to fetch plots");
+      const data = await res.json();
+      const mapped = data.map(mapPlotToField);
+      setFields([...mapped, ...baseSampleFields.map(normalizeSampleField)]);
+    } catch (err) {
+      console.error(err);
+      setFields(baseSampleFields.map(normalizeSampleField));
+    } finally {
+      setLoadingPlots(false);
+    }
+  }
 
 
   // ---------- UI helpers ----------
@@ -136,14 +205,14 @@ export default function Dashboard() {
   // ---------- COMPUTED ANALYTICS ----------
   // Total fields & area
   const analytics = useMemo(() => {
-    const totalFields = sampleFields.length;
-    const totalArea = sampleFields.reduce((s, f) => s + (f.area_ha || 0), 0);
+    const totalFields = fields.length;
+    const totalArea = fields.reduce((s, f) => s + (f.area_ha || 0), 0);
 
     // Compute estimated production per field and aggregate per crop
     const cropAggregate = {}; // cropName -> total production (tons)
     let totalProduction = 0; // tons
 
-    for (const f of sampleFields) {
+    for (const f of fields) {
       for (const c of f.crops) {
         const cRatio = c.ratio ?? 100;
         const areaForCrop = (f.area_ha * cRatio) / 100.0; // hectares
@@ -164,7 +233,7 @@ export default function Dashboard() {
       avgYieldPerHa: +avgYieldPerHa.toFixed(2),
       cropAggregate,
     };
-  }, [sampleFields]);
+  }, [fields]);
 
   // ---------- SAMPLE MONTHLY PRODUCTION (for timeseries) ----------
   // If you have real monthly data use that. Here we create a sample timeseries
@@ -452,7 +521,10 @@ export default function Dashboard() {
       <div className="dashobard-available-Fields-container fields-section">
         <div className="container" id="fields-card">
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h4 className="m-0"><FaMap style={{ marginRight: 8 }} /> Your Fields</h4>
+            <h4 className="m-0 d-flex align-items-center gap-2">
+              <FaMap style={{ marginRight: 8 }} /> Your Fields
+              {loadingPlots && <span className="text-muted small">(syncing)</span>}
+            </h4>
             <button
             className="btn btn-success d-flex align-items-center gap-2 shadow-sm"
             style={{
@@ -472,8 +544,9 @@ export default function Dashboard() {
           </div>
 
           <div className="row g-4">
-            {sampleFields.map((field, fIdx) => {
-              const totalRatio = field.crops.reduce((s, c) => s + (c.ratio || 0), 0) || 100;
+            {fields.map((field, fIdx) => {
+              const totalRatio = field.crops.reduce((s, c) => s + (c.ratio || 0), 0) || 0;
+              const remainder = Math.max(0, 100 - totalRatio);
               return (
                 <div key={field.id} className="col-12 col-md-6 col-lg-4 d-flex">
                   <div className="card field-card shadow-sm w-100">
@@ -527,7 +600,7 @@ export default function Dashboard() {
 
                         <div className="ratio-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
                           {field.crops.map((c, i) => {
-                            const widthPercent = Math.round((c.ratio / totalRatio) * 100);
+                            const widthPercent = Math.max(0, Math.round(c.ratio));
                             return (
                               <div
                                 key={i}
@@ -545,6 +618,20 @@ export default function Dashboard() {
                               </div>
                             );
                           })}
+                          {remainder > 0 && (
+                            <div
+                              className="ratio-segment"
+                              style={{
+                                width: `${Math.round(remainder)}%`,
+                                background: "#e9ecef",
+                                color: "#6c757d",
+                                justifyContent: "center",
+                              }}
+                              title={`Unassigned: ${Math.round(remainder)}%`}
+                            >
+                              {remainder > 8 ? `${Math.round(remainder)}%` : null}
+                            </div>
+                          )}
                         </div>
                       </div>
 

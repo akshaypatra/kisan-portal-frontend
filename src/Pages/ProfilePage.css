@@ -1,0 +1,175 @@
+/* --------------------
+   GLOBAL STYLES
+---------------------*/
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f7f9;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 480px;
+  background: #fff;
+  margin: 30px auto;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  margin: 0;
+  text-align: center;
+  font-size: 24px;
+}
+
+.subtitle {
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+  color: #5c5c5c;
+}
+
+/* --------------------
+   FORM ELEMENTS
+---------------------*/
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-size: 14px;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+
+input, select {
+  padding: 12px;
+  border: 1px solid #cccccc;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+input:focus, select:focus {
+  border-color: #3a9b5f;
+}
+
+/* --------------------
+   OILSEED CROP CHIP UI (UPDATED)
+---------------------*/
+
+.selected-crop-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 8px 0 12px 0;
+  padding: 10px;
+  background: #f1fbf4;
+  border-radius: 10px;
+  border: 1px solid #d9f3df;
+}
+
+.crop-chip {
+  display: flex;
+  align-items: center;
+  background: #e6f9ed;
+  color: #2a6b3f;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  gap: 6px;
+  border: 1px solid #b7e8c6;
+}
+
+.crop-chip span {
+  cursor: pointer;
+  font-weight: bold;
+  color: #2e7544;
+}
+
+.crop-chip span:hover {
+  color: #1e5632;
+}
+
+
+/* fade animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* --------------------
+   LOCATION BOX
+---------------------*/
+.location-box {
+  background: #eef9f2;
+  padding: 15px;
+  border-radius: 10px;
+  border-left: 4px solid #3a9b5f;
+}
+
+.location-btn {
+  margin-top: 10px;
+  padding: 12px;
+  width: 100%;
+  background: #3a9b5f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.location-btn:hover {
+  background: #31844f;
+}
+
+/* --------------------
+   SUBMIT BUTTON
+---------------------*/
+.submit-btn {
+  padding: 14px;
+  background: #2c71d1;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.submit-btn:hover {
+  background: #205bb0;
+}
+
+/* --------------------
+   RESPONSIVE DESIGN
+---------------------*/
+@media (min-width: 600px) {
+  .container {
+    max-width: 600px;
+    padding: 35px;
+  }
+
+  h2 {
+    font-size: 26px;
+  }
+}
+
+@media (min-width: 900px) {
+  body {
+    background: linear-gradient(to right, #e9f5eb, #f7f9fc);
+  }
+
+  .container {
+    max-width: 700px;
+  }
+}

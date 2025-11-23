@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Advisory UI</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f6ee;
+    margin: 0;
+    padding: 0;
+  }
+.advisory-header-block {
+  background: #1c7c32;
+  color: white;
+  padding: 18px;
+  font-size: 22px;
+  font-weight: bold;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;   /* space between arrow + title */
+}
+
+.back-icon {
+  font-size: 30px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.advisory-container {
+    padding: 16px;
+    max-width: 520px;
+    margin: auto;
+  }
+.advisory-card {
+    background: white;
+    padding: 16px;
+    border-radius: 14px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+.advisory-title {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+.advisory-boxes {
+    display: flex;
+    gap: 12px;
+  }
+.advisory-box {
+    flex: 1;
+    padding: 14px;
+    color: white;
+    border-radius: 12px;
+  }
+.advisory-expected {
+    background: #e6fbe9;
+    color: #1f7e2d;
+  }
+.advisory-confidence {
+    background: #d5f2ff;
+    color: #0447a5;
+  }
+.advisory-box-title {
+    font-size: 14px;
+    opacity: 0.9;
+  }
+.advisory-box-value {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 4px;
+  }
+.advisory-graph-block {
+    height: 160px;
+    border-radius: 12px;
+    background: linear-gradient(120deg, #c9ffd1, #85db93);
+    margin: 14px 0;
+    position: relative;
+  }
+.advisory-graph-line {
+    position: absolute;
+    width: 3px;
+    height: 100%;
+    background: #1f7e2d;
+    left: 45px;
+  }
+.advisory-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+.advisory-market-list div {
+    padding: 10px;
+    background: #eaf5e6;
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+
+  .advisory-market-item {
+  background: #eef7ea;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+}
+
+.advisory-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* COLORS */
+.advisory-badge.high {
+  background: #c6f6d5;
+  color: #1f7a42;
+  border: 1px solid #7ed6a4;
+}
+
+.advisory-badge.medium {
+  background: #f2ef9c;
+  color: #ac741f;
+  border: 1px solid #ecc94b;
+}
+
+.advisory-badge.low {
+  background: #fed7d7;
+  color: #c53030;
+  border: 1px solid #f56565;
+}
+
+  
+  @media (min-width: 768px) {
+    .advisory-container { max-width: 720px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="advisory-header-block">
+  <span class="back-icon">←</span>
+  AI Advisory
+</div>
+
+<div class="advisory-container">
+
+  <div class="advisory-card">
+    <div class="advisory-title">Yield Prediction</div>
+
+    <div class="advisory-boxes">
+      <div class="advisory-box advisory-expected">
+        <div class="advisory-box-title">Expected Yield</div>
+        <div class="advisory-box-value">18.5 quintals/acre</div>
+      </div>
+
+      <div class="advisory-box advisory-confidence">
+        <div class="advisory-box-title">Confidence</div>
+        <div class="advisory-box-value">87%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="advisory-card">
+    <div class="advisory-title">Price Forecast (Next 3 Months)</div>
+
+    <div class="advisory-graph-block">
+      <div class="advisory-graph-line"></div>
+    </div>
+
+    <div class="advisory-row">
+      <div>Current:</div>
+      <div>₹4,200/quintal</div>
+    </div>
+    <div class="advisory-row">
+      <div>Predicted:</div>
+      <div>₹4,850/quintal</div>
+    </div>
+  </div>
+
+  <div class="advisory-card">
+    <div class="advisory-title">Market Demand Analysis</div>
+    <div class="advisory-market-list">
+    <div class="advisory-market-item">
+    <span>Export Demand</span>
+    <span class="advisory-badge high">High</span>
+    </div>
+
+    <div class="advisory-market-item">
+    <span>Local Processing</span>
+    <span class="advisory-badge medium">Medium</span>
+    </div>
+
+    <div class="advisory-market-item">
+    <span>Oil Mills</span>
+    <span class="advisory-badge low">Low</span>
+    </div>
+
+    <div class="advisory-market-item">
+    <span>Retail Markets</span>
+    <span class="advisory-badge high">High</span>
+    </div>
+</div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

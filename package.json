@@ -11,6 +11,7 @@
     "@turf/area": "^7.3.0",
     "@turf/helpers": "^7.3.0",
     "@turf/turf": "^7.3.0",
+    "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
     "exif-js": "^2.3.0",
     "exifr": "^7.1.3",

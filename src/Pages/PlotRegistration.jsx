@@ -15,6 +15,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
 
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000/api/auth";
 
 export default function PlotRegistrationForm() {
   // form state
@@ -34,6 +35,8 @@ export default function PlotRegistrationForm() {
   // point-by-point mode state
   const [pointMode, setPointMode] = useState(false);
   const [tempPoints, setTempPoints] = useState([]); // points being plotted in pointMode
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
 
   // refs
   const mapRef = useRef(null);
@@ -274,11 +277,38 @@ export default function PlotRegistrationForm() {
   function sqmToHa(sqm) { return (sqm / 10000).toFixed(3); }
   function sqmToAcres(sqm) { return (sqm / 4046.85642).toFixed(3); }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    const payload = { plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, markers, photo: photoFile ? photoFile.name : null, photoGeo, submittedAt: new Date().toISOString() };
-    console.log("SUBMIT", payload);
-    alert("Submitted — check console");
+    const farmerId = Number(localStorage.getItem("farmer_id")) || 1;
+    const payload = {
+      farmer_id: farmerId,
+      plotName: plotName || "Untitled plot",
+      description,
+      userProvidedArea: areaInput,
+      calculatedAreaSqM,
+      polygonCoordinates: coords,
+      markers,
+      photoGeo,
+      photoFile: photoFile ? photoFile.name : null,
+      status: { stage: "Registered" },
+    };
+    setSubmitting(true);
+    setSubmitMessage("");
+    try {
+      const res = await fetch(`${API_BASE}/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Failed to save plot");
+      const data = await res.json();
+      setSubmitMessage(`Saved to backend with id ${data.plot_id || ""}`.trim());
+    } catch (err) {
+      console.error(err);
+      setSubmitMessage("Could not save plot to backend. Check network/API.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -317,9 +347,10 @@ export default function PlotRegistrationForm() {
                   </div>
 
                   <div className="d-flex gap-2">
-                    <button type="submit" className="btn btn-success">Save Plot</button>
+                    <button type="submit" className="btn btn-success" disabled={submitting}>{submitting ? "Saving..." : "Save Plot"}</button>
                     <button type="button" className="btn btn-outline-secondary" onClick={clearAll}>Clear</button>
                   </div>
+                  {submitMessage && <div className="mt-2 small text-success">{submitMessage}</div>}
                 </form>
               </div>
             </div>

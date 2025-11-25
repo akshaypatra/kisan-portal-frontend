@@ -16,6 +16,8 @@ import News from './Components/News-component/News';
 import ManageFields from './Components/Plots-component/ManageFields';
 import MarketPage from './Pages/MarketPage';
 import CropsPage from './Pages/CropsPage';
+import FarmerProfile from './Components/Profile-component/FarmerProfile';
+import FarmersProfileEditForm from './Components/Profile-component/FarmerProfileEditForm';
 
 function App() {
   return (
@@ -38,6 +40,9 @@ function App() {
             <Route path='/manage-fields' element={<ManageFields/>}></Route>
             <Route path="/market" element={<MarketPage/>} />
             <Route path="/crop-detail" element={<CropsPage/>} />
+            <Route path="/profile" element={<FarmerProfile/>} />
+            <Route path="/edit-profile" element={<FarmersProfileEditForm/>} />
+
           </Routes>
         </section>
       </div>

@@ -1,23 +1,25 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './Components/Navbar';
 import './App.css';
-import HomePage from './Pages/HomePage';
+import HomePage from './Pages/Farmers/HomePage';
 import LoginPage from './Pages/LoginPage';
 import SignupPage from './Pages/SignupPage';
-import PlotRegistration from './Pages/PlotRegistration';
+import PlotRegistration from './Components/Plots-component/PlotRegistration';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
-import Dashboard from './Pages/Dashboard';
+import Dashboard from './Pages/Farmers/Dashboard';
 import { Provider } from 'react-redux'
 import MandiMarketDashboardRedux from './Components/Mandi-components/MandiMarketDashboardRedux'
 import store from './Components/Mandi-components/store'
 import News from './Components/News-component/News';
 import ManageFields from './Components/Plots-component/ManageFields';
-import MarketPage from './Pages/MarketPage';
-import CropsPage from './Pages/CropsPage';
+import MarketPage from './Pages/Farmers/MarketPage';
+import CropsPage from './Pages/Farmers/CropsPage';
 import FarmerProfile from './Components/Profile-component/FarmerProfile';
 import FarmersProfileEditForm from './Components/Profile-component/FarmerProfileEditForm';
+import SellCropsPage from './Components/SellCrops-component/SellCropsPage';
+import FarmersListingPage from './Pages/Vendors/FamersListingPage';
 
 function App() {
   return (
@@ -42,6 +44,8 @@ function App() {
             <Route path="/crop-detail" element={<CropsPage/>} />
             <Route path="/profile" element={<FarmerProfile/>} />
             <Route path="/edit-profile" element={<FarmersProfileEditForm/>} />
+            <Route path="/sell-crops" element={<SellCropsPage/>} />
+            <Route path="/buy-crops" element={<FarmersListingPage/>}/>
 
           </Routes>
         </section>

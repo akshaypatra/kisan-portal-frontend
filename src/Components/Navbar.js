@@ -12,7 +12,7 @@ const Navbar = () => {
       <div className="navbar-container" >
 
         <Link className="navbar-brand fs-3 fw-bold" to="/"  onClick={closeMenu}>
-          Farmers Portal
+          BeejNex
         </Link>
 
         <button

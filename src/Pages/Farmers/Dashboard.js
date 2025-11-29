@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import WeatherWidget from "../Components/Weather-component/WeatherWidget";
+import WeatherWidget from "../../Components/Weather-component/WeatherWidget";
 import { useNavigate } from "react-router-dom";
 import {
   FaSeedling,
@@ -68,9 +68,9 @@ export default function Dashboard() {
       color: "#FF9800",
     },
     {
-      name: "Crop Detail",
+      name: "Sell Crops",
       icon: <FaSeedling size={32} />,
-      path: "/crop-detail",
+      path: "/sell-crops",
       color: "#8BC34A",
     },
   ];

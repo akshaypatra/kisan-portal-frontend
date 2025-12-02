@@ -6,7 +6,7 @@ import { AiOutlineQrcode } from 'react-icons/ai';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2';
 import { Link } from 'react-router-dom';
-import { QrReader } from 'react-qr-reader';
+// import { QrReader } from 'react-qr-reader';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Tooltip, Legend);
 
@@ -272,12 +272,7 @@ function SellView({ batches, onRecord, onUpdateBatch }) {
                   <button type="button" className="btn btn-sm btn-danger" onClick={()=>setShowBatchScanner(false)}>Close</button>
                 </div>
                 <div style={{width:'100%'}}>
-                  <QrReader
-                    delay={300}
-                    onError={handleBatchError}
-                    onScan={handleBatchScan}
-                    style={{ width: '100%' }}
-                  />
+                  qr
                 </div>
               </div>
             )}
@@ -320,12 +315,7 @@ function SellView({ batches, onRecord, onUpdateBatch }) {
                     <button type="button" className="btn btn-sm btn-danger" onClick={()=>setShowFarmerScanner(false)}>Close</button>
                   </div>
                   <div>
-                    <QrReader
-                      delay={300}
-                      onError={handleFarmerError}
-                      onScan={handleFarmerScan}
-                      style={{ width: '100%' }}
-                    />
+                   qr
                   </div>
                 </div>
               )}

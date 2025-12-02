@@ -1,24 +1,35 @@
 import React, { useState } from 'react';
-import { User, Phone, Lock, Sprout } from 'lucide-react';
+import { User, Phone, Lock, Sprout, Briefcase } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
-import CONFIG from '../config';
+import authService from '../services/authService';
 
 export default function SignupPage() {
   const [credentials, setCredentials] = useState({
     name: '',
     mobile: '',
     password: '',
+    role: 'farmer',
     agristack_id: '',
   });
 
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const validate = () => {
-    const { name, mobile, password } = credentials;
+  const roles = [
+    { value: 'farmer', label: 'Farmer / किसान' },
+    { value: 'seed_seller', label: 'Seed Seller / बीज विक्रेता' },
+    { value: 'fpo', label: 'FPO / किसान उत्पादक संगठन' },
+    { value: 'trader', label: 'Trader / व्यापारी' },
+    { value: 'storage', label: 'Storage / भंडारण' },
+    { value: 'manufacturer', label: 'Manufacturer / निर्माता' },
+    { value: 'retailer', label: 'Retailer / खुदरा विक्रेता' },
+    { value: 'policy_maker', label: 'Policy Maker / नीति निर्माता' },
+  ];
 
-    if (!name.trim() || !mobile.trim() || !password.trim()) {
+  const validate = () => {
+    const { name, mobile, password, role } = credentials;
+
+    if (!name.trim() || !mobile.trim() || !password.trim() || !role) {
       alert('कृपया सभी फील्ड भरें / Please fill all fields');
       return false;
     }
@@ -45,42 +56,29 @@ export default function SignupPage() {
         name: credentials.name,
         mobile: credentials.mobile,
         password: credentials.password,
-        agristack_id: credentials.agristack_id,
+        role: credentials.role,
       };
 
-      const res = await axios.post(
-        CONFIG.API_BASE_URL + '/api/auth/register',
-        payload,
-        {
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      // Call backend register API
+      const data = await authService.register(payload);
 
-      // Successful response example:
-      // {
-      //   "id": 1,
-      //   "name": "John",
-      //   "mobile": "9876543210",
-      //   "role": "farmer",
-      //   "agristack_id": "AGRI123"
-      // }
-
-      if (res.status === 200 || res.status === 201) {
-        const userData = res.data;
-
-        // Store complete user object in localStorage
-        localStorage.setItem('user', JSON.stringify(userData));
+      // Backend returns { token, user }
+      if (data.token && data.user) {
+        // Store token and user data
+        localStorage.setItem('accessToken', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
 
         alert('रजिस्ट्रेशन सफल / Registration successful');
 
-        navigate('/login');
+        // Auto-login: redirect to dashboard router
+        navigate('/login-redirect');
       } else {
         alert('रजिस्ट्रेशन असफल हुआ – कृपया पुन: प्रयास करें');
       }
     } catch (err) {
       const msg =
+        err?.response?.data?.detail ||
         err?.response?.data?.message ||
-        err?.response?.data?.error ||
         err?.message ||
         'कुछ गलत हुआ। कृपया बाद में पुनः प्रयास करें।';
       alert(msg);
@@ -181,24 +179,24 @@ export default function SignupPage() {
                     />
                   </div>
 
-                  {/* Agristack ID */}
+                  {/* Role Selection */}
                   <div className="mb-3">
                     <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
-                      <Sprout size={18} /> Agristack ID (optional)
+                      <Briefcase size={18} /> Role / भूमिका
                     </label>
-                    <input
-                      type="text"
-                      className="form-control border-success"
-                      placeholder="Enter agristack id (if any)"
-                      value={credentials.agristack_id}
+                    <select
+                      className="form-select border-success"
+                      value={credentials.role}
                       onChange={(e) =>
-                        setCredentials({
-                          ...credentials,
-                          agristack_id: e.target.value,
-                        })
+                        setCredentials({ ...credentials, role: e.target.value })
                       }
-                      onKeyDown={onKeyDown}
-                    />
+                    >
+                      {roles.map((role) => (
+                        <option key={role.value} value={role.value}>
+                          {role.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <button

@@ -1,11 +1,23 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import authService from "../services/authService";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
   const closeMenu = () => setMenuOpen(false);
+
+  // Check if user is logged in
+  const isAuthenticated = authService.isAuthenticated();
+  const user = authService.getStoredUser();
+
+  const handleLogout = () => {
+    authService.logout();
+    closeMenu();
+    navigate('/login');
+  };
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-success">
@@ -48,11 +60,29 @@ const Navbar = () => {
               </Link>
             </li>
 
-            <li className="nav-item">
-              <Link className="nav-link fs-5" to="/login" onClick={closeMenu}>
-                Log In
-              </Link>
-            </li>
+            {!isAuthenticated ? (
+              <li className="nav-item">
+                <Link className="nav-link fs-5" to="/login" onClick={closeMenu}>
+                  Log In
+                </Link>
+              </li>
+            ) : (
+              <>
+                <li className="nav-item">
+                  <span className="nav-link fs-6 text-white-50">
+                    {user?.name || 'User'}
+                  </span>
+                </li>
+                <li className="nav-item">
+                  <button
+                    className="btn btn-outline-light btn-sm ms-2"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </button>
+                </li>
+              </>
+            )}
 
           </ul>
         </div>

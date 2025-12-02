@@ -28,6 +28,7 @@ import StorageDashboard from './Pages/StorageDashboard';
 import ManufacturerDashboard from './Pages/ManufacturerDashboard';
 import RetailerDashboard from './Pages/RetailerDashboard';
 import PolicyMakerDashboard from './Pages/PolicyMakerDashboard';
+import CropPlanning from './Pages/Farmers/CropPlanning';
 
 function App() {
   return (
@@ -69,6 +70,7 @@ function App() {
             <Route path="/edit-profile" element={<FarmersProfileEditForm/>} />
             <Route path="/sell-crops" element={<SellCropsPage/>} />
             <Route path="/buy-crops" element={<FarmersListingPage/>}/>
+            <Route path="/crop-planning/:plotId" element={<CropPlanning />} />
           </Routes>
         </section>
       </div>

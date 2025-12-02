@@ -602,6 +602,12 @@ export default function Dashboard() {
 
           <div className="row g-4">
             {fields.map((field, fIdx) => {
+              const declaredAcres = Number(field.area_acres) || Number(field.area_ha || 0) / 0.404686 || 0;
+              const usedAcres = (field.crops || []).reduce(
+                (sum, c) => sum + (Number(c.area_acres) || 0),
+                0
+              );
+              const remainingAcres = Math.max(0, +(declaredAcres - usedAcres).toFixed(2));
               const totalRatio = field.crops.reduce((s, c) => s + (c.ratio || 0), 0) || 0;
               const remainder = Math.max(0, 100 - totalRatio);
               const plotIdentifier = field.dbId ?? field.id;
@@ -723,7 +729,7 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, gap: 8 }}>
                         <button
                           className="btn btn-sm btn-outline-success"
                           onClick={() => {
@@ -731,6 +737,21 @@ export default function Dashboard() {
                           }}
                         >
                           Manage
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-primary"
+                          disabled={remainingAcres <= 0}
+                          title={
+                            remainingAcres > 0
+                              ? "Plan crops for the unused area"
+                              : "No free area left"
+                          }
+                          onClick={() => {
+                            if (remainingAcres <= 0) return;
+                            navigate(`/crop-planning/${routeKey}`);
+                          }}
+                        >
+                          Crop Plan
                         </button>
                       </div>
                     </div>

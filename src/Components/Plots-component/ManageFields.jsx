@@ -164,7 +164,11 @@ export default function ManageFields() {
   }
 
   function mapPlotToField(plot) {
-    const area_acres = plot.calculated_area_sqm ? +(plot.calculated_area_sqm / SQM_PER_ACRE).toFixed(2) : 0;
+    const calculated = plot.calculated_area_sqm
+      ? +(plot.calculated_area_sqm / SQM_PER_ACRE).toFixed(2)
+      : 0;
+    const fallbackArea = Number(plot.user_provided_area) || 0;
+    const area_acres = calculated || fallbackArea;
     const stage = (plot.status && (plot.status.stage || plot.status.status)) || "Registered";
     const cropCycles = Array.isArray(plot.crop_cycles) ? plot.crop_cycles : [];
     return {
@@ -535,6 +539,20 @@ export default function ManageFields() {
     setHistoryModal({ open: false, cropName: "", events: [] });
   }
 
+  const getRemainingArea = (field) => {
+    if (!field) return 0;
+    const declared =
+      Number(field.area_acres) ||
+      Number(field.user_provided_area) ||
+      Number(field.userProvidedArea) ||
+      0;
+    const used = (field.crops || []).reduce(
+      (sum, crop) => sum + (Number(crop.area_acres) || 0),
+      0
+    );
+    return Math.max(0, +(declared - used).toFixed(2));
+  };
+
   const displayedFields = useMemo(() => {
     if (!plotId) return fields;
     return fields.filter((f) => {
@@ -629,7 +647,11 @@ export default function ManageFields() {
             </div>
           )}
 
-          {displayedFields.map((f) => (
+          {displayedFields.map((f) => {
+            const remainingArea = getRemainingArea(f);
+            const fallbackId = typeof f.id === "string" ? f.id : String(f.id ?? "");
+            const routeTarget = f.routeKey || (f.dbId ? String(f.dbId) : fallbackId);
+            return (
             <div key={f.id} className="col-12 col-md-6 col-lg-4 d-flex">
               <div className="card field-row w-100">
                 <div className="card-body">
@@ -638,6 +660,9 @@ export default function ManageFields() {
                       <div style={{ fontWeight: 800, color: "#153d2b" }}>{f.name}</div>
                       <div className="small-muted">
                         {f.stage} | {f.area_acres} ac
+                      </div>
+                      <div className="small-muted">
+                        Unused area: <strong>{remainingArea}</strong> ac
                       </div>
                     </div>
 
@@ -691,7 +716,18 @@ export default function ManageFields() {
                   </div>
 
                   <div className="d-flex justify-content-end">
-                    <div>
+                    <div className="d-flex flex-wrap gap-2">
+                      <button
+                        className="btn btn-sm btn-outline-success action-btn"
+                        title={remainingArea > 0 ? "Plan crops for available land" : "No free area left"}
+                        disabled={remainingArea <= 0}
+                        onClick={() => {
+                          if (remainingArea <= 0) return;
+                          navigate(`/crop-planning/${routeTarget}`);
+                        }}
+                      >
+                        Crop plan
+                      </button>
                       <button
                         className="btn btn-sm btn-outline-primary me-2 action-btn"
                         title="Edit field"
@@ -712,7 +748,8 @@ export default function ManageFields() {
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       </div>
 

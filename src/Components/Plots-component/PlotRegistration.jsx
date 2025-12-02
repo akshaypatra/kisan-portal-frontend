@@ -26,6 +26,9 @@ export default function PlotRegistrationForm() {
   const [coords, setCoords] = useState([]); // finalized polygon coords [[lat,lng],...]
   const [markers, setMarkers] = useState([]); // generic markers (photo/device/point mode)
   const [calculatedAreaSqM, setCalculatedAreaSqM] = useState(0);
+  const [stateName, setStateName] = useState("");
+  const [cityName, setCityName] = useState("");
+  const [villageName, setVillageName] = useState("");
 
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoGeo, setPhotoGeo] = useState(null);
@@ -294,6 +297,9 @@ export default function PlotRegistrationForm() {
     setPhotoGeo(null);
     setPhotoUploadPath(null);
     setPhotoUploadError("");
+    setStateName("");
+    setCityName("");
+    setVillageName("");
     const fg = fgRef.current;
     if (fg && fg._layers) {
       Object.keys(fg._layers).forEach(k => fg.removeLayer(fg._layers[k]));
@@ -354,7 +360,14 @@ export default function PlotRegistrationForm() {
       markers: normalizeMarkers(markers),
       photo_geo: normalizePhotoGeo(photoGeo),
       photo_file: photoUploadPath,
-      status: { stage: "Registered" },
+      status: {
+        stage: "Registered",
+        location: {
+          state: stateName || null,
+          city: cityName || null,
+          village: villageName || null,
+        },
+      },
     };
 
     if (!payload.polygon_coordinates || !Object.keys(payload.polygon_coordinates).length) {
@@ -402,6 +415,21 @@ export default function PlotRegistrationForm() {
                   <div className="mb-3">
                     <label className="form-label">Description</label>
                     <textarea className="form-control" rows={3} value={description} onChange={e => setDescription(e.target.value)} />
+                  </div>
+
+                  <div className="row">
+                    <div className="col-md-4 mb-3">
+                      <label className="form-label">State</label>
+                      <input className="form-control" value={stateName} onChange={e => setStateName(e.target.value)} placeholder="e.g. Maharashtra" />
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <label className="form-label">City / District</label>
+                      <input className="form-control" value={cityName} onChange={e => setCityName(e.target.value)} placeholder="e.g. Pune" />
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <label className="form-label">Village</label>
+                      <input className="form-control" value={villageName} onChange={e => setVillageName(e.target.value)} placeholder="e.g. Hinjewadi" />
+                    </div>
                   </div>
 
                   <div className="mb-3">
@@ -549,7 +577,7 @@ export default function PlotRegistrationForm() {
               <div className="card-body">
                 <h6>Preview JSON</h6>
                 <pre style={{ maxHeight: 220, overflow: "auto", background: "#f8f9fa", padding: 10, borderRadius: 6, fontSize: 13 }}>
-{JSON.stringify({ plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, tempPoints, markers, photoGeo, photoFile: photoUploadPath }, null, 2)}
+{JSON.stringify({ plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, tempPoints, markers, photoGeo, photoFile: photoUploadPath, stateName, cityName, villageName }, null, 2)}
                 </pre>
               </div>
             </div>

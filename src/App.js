@@ -62,6 +62,7 @@ function App() {
             </Route>
             <Route path="/news" element={<News/>} />
             <Route path='/manage-fields' element={<ManageFields/>}></Route>
+            <Route path='/manage-fields/:plotId' element={<ManageFields/>}></Route>
             <Route path="/market" element={<MarketPage/>} />
             <Route path="/crop-detail" element={<CropsPage/>} />
             <Route path="/profile" element={<FarmerProfile/>} />

@@ -6,6 +6,7 @@ import * as turf from "@turf/turf";
 import exifr from "exifr";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
+import api from "../../services/api";
 
 // Fix icon paths for many bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -15,7 +16,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
 
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000/api/auth";
+const PLOTS_ENDPOINT = "/api/plots";
 
 export default function PlotRegistrationForm() {
   // form state
@@ -277,35 +278,73 @@ export default function PlotRegistrationForm() {
   function sqmToHa(sqm) { return (sqm / 10000).toFixed(3); }
   function sqmToAcres(sqm) { return (sqm / 4046.85642).toFixed(3); }
 
+  const toGeoJSONPolygon = (points) => {
+    if (!points || points.length < 3) return null;
+    const ring = points.map(([lat, lng]) => [lng, lat]);
+    // close polygon
+    if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) {
+      ring.push(ring[0]);
+    }
+    return {
+      type: "Polygon",
+      coordinates: [ring],
+    };
+  };
+
+  const normalizeMarkers = (points) =>
+    points.map(([lat, lng]) => ({
+      lat,
+      lng,
+    }));
+
+  const normalizePhotoGeo = (value) => {
+    if (!value || value.length < 2) return null;
+    return { lat: value[0], lng: value[1] };
+  };
+
   async function handleSubmit(e) {
     e.preventDefault();
-    const farmerId = Number(localStorage.getItem("farmer_id")) || 1;
+    if (coords.length < 3) {
+      alert("Draw the plot boundary on the map before saving.");
+      return;
+    }
+
+    const parsedArea = parseFloat(areaInput);
+    const geojsonPolygon = toGeoJSONPolygon(coords);
     const payload = {
-      farmer_id: farmerId,
-      plotName: plotName || "Untitled plot",
-      description,
-      userProvidedArea: areaInput,
-      calculatedAreaSqM,
-      polygonCoordinates: coords,
-      markers,
-      photoGeo,
-      photoFile: photoFile ? photoFile.name : null,
+      plot_name: plotName || "Untitled plot",
+      description: description || null,
+      user_provided_area: Number.isFinite(parsedArea)
+        ? parsedArea
+        : calculatedAreaSqM
+        ? Number((calculatedAreaSqM / 4046.85642).toFixed(2))
+        : 0,
+      calculated_area_sqm: calculatedAreaSqM || null,
+      polygon_coordinates: geojsonPolygon || {},
+      markers: normalizeMarkers(markers),
+      photo_geo: normalizePhotoGeo(photoGeo),
+      photo_file: photoFile ? photoFile.name : null,
       status: { stage: "Registered" },
     };
+
+    if (!payload.polygon_coordinates || !Object.keys(payload.polygon_coordinates).length) {
+      alert("Unable to build polygon payload. Please redraw the field boundary.");
+      return;
+    }
+
     setSubmitting(true);
     setSubmitMessage("");
     try {
-      const res = await fetch(`${API_BASE}/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to save plot");
-      const data = await res.json();
-      setSubmitMessage(`Saved to backend with id ${data.plot_id || ""}`.trim());
+      const { data } = await api.post(`${PLOTS_ENDPOINT}/create`, payload);
+      setSubmitMessage(`Saved to backend with id ${data?.id ?? ""}`.trim());
     } catch (err) {
       console.error(err);
-      setSubmitMessage("Could not save plot to backend. Check network/API.");
+      const msg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Could not save plot to backend. Check network/API.";
+      setSubmitMessage(msg);
     } finally {
       setSubmitting(false);
     }

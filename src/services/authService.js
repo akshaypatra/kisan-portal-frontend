@@ -3,31 +3,27 @@ import api from './api';
 const authService = {
   // Login with mobile and password
   login: async (mobile, password) => {
-    const response = await api.post('/api/auth/login', {
+    const { data } = await api.post('/api/auth/login', {
       mobile,
       password,
     });
-    // Backend returns: { token, user }
-    if (response.data.token && response.data.user) {
-      return {
-        token: response.data.token,
-        user: response.data.user,
-      };
+
+    if (data?.token && data?.user) {
+      return data;
     }
-    throw new Error('Login failed: Invalid response from server');
+
+    throw new Error(data?.detail || data?.message || 'Login failed');
   },
 
   // Register new user
   register: async (userData) => {
-    const response = await api.post('/api/auth/register', userData);
-    // Backend returns: { token, user }
-    if (response.data.token && response.data.user) {
-      return {
-        token: response.data.token,
-        user: response.data.user,
-      };
+    const { data } = await api.post('/api/auth/register', userData);
+
+    if (data?.token && data?.user) {
+      return data;
     }
-    throw new Error('Registration failed: Invalid response from server');
+
+    throw new Error(data?.detail || data?.message || 'Registration failed');
   },
 
   // Get current user info

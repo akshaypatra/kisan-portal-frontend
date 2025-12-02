@@ -20,6 +20,7 @@ import FarmerProfile from './Components/Profile-component/FarmerProfile';
 import FarmersProfileEditForm from './Components/Profile-component/FarmerProfileEditForm';
 import SellCropsPage from './Components/SellCrops-component/SellCropsPage';
 import FarmersListingPage from './Pages/Vendors/FamersListingPage';
+import SeedSellerDashboard from './Pages/SeedSeller/SeedSellerDashboard';
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
             <Route path="/edit-profile" element={<FarmersProfileEditForm/>} />
             <Route path="/sell-crops" element={<SellCropsPage/>} />
             <Route path="/buy-crops" element={<FarmersListingPage/>}/>
+            <Route path='/seed-seller' element={<SeedSellerDashboard/>}/>
 
           </Routes>
         </section>

@@ -28,6 +28,7 @@ import {
   Cell,
   Legend,
 } from "recharts";
+import QRCode from "react-qr-code";
 import api from "../../services/api";
 
 /**
@@ -603,6 +604,12 @@ export default function Dashboard() {
             {fields.map((field, fIdx) => {
               const totalRatio = field.crops.reduce((s, c) => s + (c.ratio || 0), 0) || 0;
               const remainder = Math.max(0, 100 - totalRatio);
+              const plotIdentifier = field.dbId ?? field.id;
+              const routeKey = field.routeKey || (field.dbId ? String(field.dbId) : String(field.id));
+              const qrValue = JSON.stringify({
+                plot_id: plotIdentifier,
+                plot_name: field.name,
+              });
               return (
                 <div key={field.id} className="col-12 col-md-6 col-lg-4 d-flex">
                   <div className="card field-card shadow-sm w-100">
@@ -631,6 +638,19 @@ export default function Dashboard() {
                     </div>
 
                     <div className="field-body">
+                      <div className="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                          <div className="small text-muted">Plot ID</div>
+                          <div className="fw-bold text-success">
+                            #{plotIdentifier}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <QRCode value={qrValue} size={80} bgColor="#ffffff" />
+                          <div className="small text-muted mt-1">Scan plot</div>
+                        </div>
+                      </div>
+
                       <div className="crop-badges">
                         {field.crops.map((c, i) => (
                           <span
@@ -707,7 +727,6 @@ export default function Dashboard() {
                         <button
                           className="btn btn-sm btn-outline-success"
                           onClick={() => {
-                            const routeKey = field.routeKey || (field.dbId ? String(field.dbId) : String(field.id));
                             navigate(`/manage-fields/${routeKey}`);
                           }}
                         >

@@ -36,7 +36,7 @@ export default function LoginPage() {
         localStorage.setItem('accessToken', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        alert('लॉगिन सफल / Login successful');
+        // alert('लॉगिन सफल / Login successful');
 
         // Redirect to dashboard router which will route based on role
         navigate('/login-redirect');

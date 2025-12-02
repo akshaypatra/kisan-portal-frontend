@@ -5,7 +5,6 @@ import {
   FaPlus,
   FaSave,
   FaTimes,
-  FaSeedling,
   FaMap,
   FaTruckLoading,
 } from "react-icons/fa";
@@ -591,9 +590,6 @@ export default function ManageFields() {
             <FaPlus style={{ marginRight: 8 }} /> New Plot
           </button>
 
-          {/* <button className="btn btn-success" onClick={() => openEditModal(null)}>
-            <FaSeedling style={{ marginRight: 8 }} /> Add Field
-          </button> */}
         </div>
       </div>
 

@@ -40,4 +40,22 @@ api.interceptors.response.use(
   }
 );
 
+export const seedAPI = {
+  listBreeds: () => api.get('/api/seed/breeds'),
+  createBreed: (payload) => api.post('/api/seed/breeds', payload),
+  listBatches: () => api.get('/api/seed/batches'),
+  createBatch: (payload) => api.post('/api/seed/batches', payload),
+};
+
+export const plotsAPI = {
+  uploadPhoto: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/api/plots/upload-photo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  getPublicDetails: (plotId) => api.get(`/api/plots/public/${plotId}`),
+};
+
 export default api;

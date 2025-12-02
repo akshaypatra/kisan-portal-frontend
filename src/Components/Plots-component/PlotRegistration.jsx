@@ -6,7 +6,7 @@ import * as turf from "@turf/turf";
 import exifr from "exifr";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
-import api from "../../services/api";
+import api, { plotsAPI } from "../../services/api";
 
 // Fix icon paths for many bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -27,9 +27,11 @@ export default function PlotRegistrationForm() {
   const [markers, setMarkers] = useState([]); // generic markers (photo/device/point mode)
   const [calculatedAreaSqM, setCalculatedAreaSqM] = useState(0);
 
-  const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoGeo, setPhotoGeo] = useState(null);
+  const [photoUploadPath, setPhotoUploadPath] = useState(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -199,8 +201,9 @@ export default function PlotRegistrationForm() {
   async function handlePhotoChange(e) {
     const file = e.target.files[0];
     if (!file) return;
-    setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
+    setPhotoUploadError("");
+    setPhotoUploadPath(null);
     try {
       const gps = await exifr.gps(file);
       if (gps && gps.latitude && gps.longitude) {
@@ -221,6 +224,29 @@ export default function PlotRegistrationForm() {
       }
     } catch (err) {
       console.warn("EXIF read failed", err);
+    }
+
+    try {
+      setPhotoUploading(true);
+      const response = await plotsAPI.uploadPhoto(file);
+      const data = response?.data || {};
+      const path = data.relative_path || data.path || "";
+      if (!path) {
+        setPhotoUploadError("Photo uploaded but no path returned.");
+      } else {
+        setPhotoUploadPath(path);
+        setPhotoUploadError("");
+      }
+    } catch (err) {
+      console.error(err);
+      const msg =
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Failed to upload photo.";
+      setPhotoUploadError(msg);
+      alert(msg);
+    } finally {
+      setPhotoUploading(false);
     }
   }
 
@@ -264,6 +290,10 @@ export default function PlotRegistrationForm() {
     setCalculatedAreaSqM(0);
     setTempPoints([]);
     setPointMode(false);
+    setPhotoPreview(null);
+    setPhotoGeo(null);
+    setPhotoUploadPath(null);
+    setPhotoUploadError("");
     const fg = fgRef.current;
     if (fg && fg._layers) {
       Object.keys(fg._layers).forEach(k => fg.removeLayer(fg._layers[k]));
@@ -271,7 +301,7 @@ export default function PlotRegistrationForm() {
   }
 
   function copyJSON() {
-    const data = { plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, markers, photoGeo, photoFile: photoFile ? photoFile.name : null };
+    const data = { plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, markers, photoGeo, photoFile: photoUploadPath };
     navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => alert("Copied JSON to clipboard"));
   }
 
@@ -323,12 +353,17 @@ export default function PlotRegistrationForm() {
       polygon_coordinates: geojsonPolygon || {},
       markers: normalizeMarkers(markers),
       photo_geo: normalizePhotoGeo(photoGeo),
-      photo_file: photoFile ? photoFile.name : null,
+      photo_file: photoUploadPath,
       status: { stage: "Registered" },
     };
 
     if (!payload.polygon_coordinates || !Object.keys(payload.polygon_coordinates).length) {
       alert("Unable to build polygon payload. Please redraw the field boundary.");
+      return;
+    }
+
+    if (photoPreview && !photoUploadPath) {
+      alert("Photo upload is still in progress. Please wait.");
       return;
     }
 
@@ -383,10 +418,21 @@ export default function PlotRegistrationForm() {
                         <div className="small">Photo geo: {photoGeo ? `${photoGeo[0].toFixed(6)}, ${photoGeo[1].toFixed(6)}` : "not set"}</div>
                       </div>
                     )}
+                    {photoUploading && <div className="small text-muted mt-1">Uploading photo...</div>}
+                    {!photoUploading && photoUploadPath && !photoUploadError && (
+                      <div className="small text-success mt-1">Photo uploaded.</div>
+                    )}
+                    {photoUploadError && <div className="small text-danger mt-1">{photoUploadError}</div>}
                   </div>
 
                   <div className="d-flex gap-2">
-                    <button type="submit" className="btn btn-success" disabled={submitting}>{submitting ? "Saving..." : "Save Plot"}</button>
+                    <button
+                      type="submit"
+                      className="btn btn-success"
+                      disabled={submitting || photoUploading || (photoPreview && !photoUploadPath)}
+                    >
+                      {submitting ? "Saving..." : photoUploading ? "Uploading..." : "Save Plot"}
+                    </button>
                     <button type="button" className="btn btn-outline-secondary" onClick={clearAll}>Clear</button>
                   </div>
                   {submitMessage && <div className="mt-2 small text-success">{submitMessage}</div>}
@@ -503,7 +549,7 @@ export default function PlotRegistrationForm() {
               <div className="card-body">
                 <h6>Preview JSON</h6>
                 <pre style={{ maxHeight: 220, overflow: "auto", background: "#f8f9fa", padding: 10, borderRadius: 6, fontSize: 13 }}>
-{JSON.stringify({ plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, tempPoints, markers, photoGeo, photoFile: photoFile ? photoFile.name : null }, null, 2)}
+{JSON.stringify({ plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, tempPoints, markers, photoGeo, photoFile: photoUploadPath }, null, 2)}
                 </pre>
               </div>
             </div>

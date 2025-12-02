@@ -1,11 +1,15 @@
 /* Full-file: SeedSellerDashboard.jsx (updated SellView using react-qr-scanner) */
-import React, { useEffect,  useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { FiLayers, FiPlusCircle, FiShoppingCart, FiBarChart2, FiCamera, FiClipboard, FiUser } from 'react-icons/fi';
+import { FiLayers, FiPlusCircle, FiShoppingCart, FiBarChart2, FiClipboard, FiUser } from 'react-icons/fi';
 import { AiOutlineQrcode } from 'react-icons/ai';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2';
 import { Link } from 'react-router-dom';
+import { seedAPI, plotsAPI } from '../../services/api';
+import CONFIG from '../../config';
+import Select from 'react-select';
+import { Scanner } from '@yudiel/react-qr-scanner';
 // import { QrReader } from 'react-qr-reader';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Tooltip, Legend);
@@ -108,50 +112,385 @@ function BatchOverviewCard({ batch, onCopy }) {
   );
 }
 
-function NewBatchView({ onSave }) {
-  const [seed, setSeed] = useState('');
-  const [breed, setBreed] = useState('');
-  const [total, setTotal] = useState(100);
-  const [testInfo, setTestInfo] = useState('');
-  const [pestInfo, setPestInfo] = useState('');
-  const [howToGrow, setHowToGrow] = useState('');
+function NewBatchView({ breeds, onCreateBreed, onCreateBatch, loading }) {
+  const [breedForm, setBreedForm] = useState({
+    seed: '',
+    breed: '',
+    testInfo: '',
+    pestInfo: '',
+    howToGrow: '',
+  });
+  const [batchForm, setBatchForm] = useState({
+    breedId: '',
+    seed: '',
+    breedName: '',
+    total: 100,
+    testInfo: '',
+    pestInfo: '',
+    howToGrow: '',
+    trace: '',
+  });
+  const [savingBreed, setSavingBreed] = useState(false);
+  const [savingBatch, setSavingBatch] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');
 
-  function submit(e){ e && e.preventDefault(); if(!seed||!breed) return alert('seed & breed required'); const b={ id:'B-'+Math.floor(Math.random()*9000+1000), seed, breed, total: Number(total), sold:0, remaining: Number(total), testInfo, pestInfo, howToGrow }; onSave(b); setSeed(''); setBreed(''); setTotal(100); setTestInfo(''); setPestInfo(''); setHowToGrow(''); }
+  function handleBreedChange(field, value) {
+    setBreedForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function submitBreed(e) {
+    e.preventDefault();
+    if (!breedForm.seed.trim() || !breedForm.breed.trim()) {
+      alert('Seed and breed are required');
+      return;
+    }
+    setSavingBreed(true);
+    const result = await onCreateBreed({
+      seed_name: breedForm.seed.trim(),
+      breed_name: breedForm.breed.trim(),
+      test_info: breedForm.testInfo,
+      pest_notes: breedForm.pestInfo,
+      how_to_grow: breedForm.howToGrow,
+    });
+    setSavingBreed(false);
+    if (result?.success) {
+      setStatusMsg('Breed saved.');
+      setBreedForm({ seed: '', breed: '', testInfo: '', pestInfo: '', howToGrow: '' });
+      setTimeout(() => setStatusMsg(''), 3000);
+    } else if (result?.error) {
+      setStatusMsg(`Error: ${result.error}`);
+      setTimeout(() => setStatusMsg(''), 4000);
+    }
+  }
+
+  function handleBatchField(field, value) {
+    setBatchForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  const breedOptions = useMemo(
+    () =>
+      breeds.map((b) => ({
+        value: String(b.id),
+        label: `${b.seed} - ${b.breed}`,
+        data: b,
+      })),
+    [breeds]
+  );
+
+  const selectedBreedOption = useMemo(
+    () =>
+      breedOptions.find((opt) => opt.value === String(batchForm.breedId)) || null,
+    [breedOptions, batchForm.breedId]
+  );
+
+  function handleBreedSelect(option) {
+    if (!option) {
+      setBatchForm((prev) => ({
+        ...prev,
+        breedId: '',
+        seed: '',
+        breedName: '',
+        testInfo: '',
+        pestInfo: '',
+        howToGrow: '',
+      }));
+      return;
+    }
+    const selected = option.data;
+    setBatchForm((prev) => ({
+      ...prev,
+      breedId: option.value,
+      seed: selected?.seed || '',
+      breedName: selected?.breed || '',
+      testInfo: selected?.testInfo || '',
+      pestInfo: selected?.pestInfo || '',
+      howToGrow: selected?.howToGrow || '',
+    }));
+  }
+
+  const breedSelected = Boolean(batchForm.breedId);
+
+  async function submitBatch(e) {
+    e.preventDefault();
+    if (!batchForm.breedId) {
+      alert('Select a breed for this batch');
+      return;
+    }
+    if (!batchForm.total || Number(batchForm.total) <= 0) {
+      alert('Enter total units');
+      return;
+    }
+    setSavingBatch(true);
+    const payload = {
+      breed_id: Number(batchForm.breedId),
+      total_units: Number(batchForm.total),
+      seed_name: batchForm.seed,
+      breed_name: batchForm.breedName,
+      test_info: batchForm.testInfo,
+      pest_notes: batchForm.pestInfo,
+      how_to_grow: batchForm.howToGrow,
+      trace_code: batchForm.trace,
+    };
+    const result = await onCreateBatch(payload);
+    setSavingBatch(false);
+    if (result?.success) {
+      setStatusMsg('Batch created.');
+      setBatchForm({
+        breedId: '',
+        seed: '',
+        breedName: '',
+        total: 100,
+        testInfo: '',
+        pestInfo: '',
+        howToGrow: '',
+        trace: '',
+      });
+      setTimeout(() => setStatusMsg(''), 3000);
+    } else if (result?.error) {
+      setStatusMsg(`Error: ${result.error}`);
+      setTimeout(() => setStatusMsg(''), 4000);
+    }
+  }
 
   return (
-    <div className="card shadow-sm">
+    <div className="row g-4">
+      <div className="col-12">
+        {statusMsg && <div className="alert alert-success py-2">{statusMsg}</div>}
+        {loading && <div className="alert alert-info py-2">Syncing seed data...</div>}
+      </div>
+      <div className="col-12 col-lg-5">
+        <div className="card shadow-sm">
+          <div className="card-body">
+            <h5 className="mb-3">Create Seed Breed</h5>
+            <form onSubmit={submitBreed} className="row g-3">
+              <div className="col-12">
+                <label className="form-label">Seed</label>
+                <input className="form-control" value={breedForm.seed} onChange={(e) => handleBreedChange('seed', e.target.value)} placeholder="e.g. Mustard" />
+              </div>
+              <div className="col-12">
+                <label className="form-label">Breed name</label>
+                <input className="form-control" value={breedForm.breed} onChange={(e) => handleBreedChange('breed', e.target.value)} placeholder="e.g. M-201" />
+              </div>
+              <div className="col-12">
+                <label className="form-label">Test info</label>
+                <input className="form-control" value={breedForm.testInfo} onChange={(e) => handleBreedChange('testInfo', e.target.value)} />
+              </div>
+              <div className="col-12">
+                <label className="form-label">Pest notes</label>
+                <input className="form-control" value={breedForm.pestInfo} onChange={(e) => handleBreedChange('pestInfo', e.target.value)} />
+              </div>
+              <div className="col-12">
+                <label className="form-label">How to grow</label>
+                <textarea className="form-control" rows={3} value={breedForm.howToGrow} onChange={(e) => handleBreedChange('howToGrow', e.target.value)} />
+              </div>
+              <div className="col-12 text-end">
+                <button className="btn btn-success" disabled={savingBreed}>
+                  {savingBreed ? 'Saving...' : 'Save Breed'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div className="col-12 col-lg-7">
+        <div className="card shadow-sm">
+          <div className="card-body">
+            <h5 className="mb-3">Create Batch</h5>
+            <form onSubmit={submitBatch} className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label">Select Breed</label>
+                <Select
+                  classNamePrefix="seed-select"
+                  options={breedOptions}
+                  value={selectedBreedOption}
+                  onChange={handleBreedSelect}
+                  placeholder="Start typing seed or breed"
+                  isClearable
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Total units</label>
+                <input
+                  type="number"
+                  min={1}
+                  className="form-control"
+                  value={batchForm.total}
+                  onChange={(e) => handleBatchField('total', e.target.value)}
+                  disabled={!breedSelected}
+                />
+              </div>
+              <div className="col-12 col-md-6">
+                <label className="form-label">Seed</label>
+                <input
+                  className="form-control"
+                  value={batchForm.seed}
+                  onChange={(e) => handleBatchField('seed', e.target.value)}
+                  disabled={!breedSelected}
+                />
+              </div>
+              <div className="col-12 col-md-6">
+                <label className="form-label">Breed name</label>
+                <input
+                  className="form-control"
+                  value={batchForm.breedName}
+                  onChange={(e) => handleBatchField('breedName', e.target.value)}
+                  disabled={!breedSelected}
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label">Test info</label>
+                <input
+                  className="form-control"
+                  value={batchForm.testInfo}
+                  onChange={(e) => handleBatchField('testInfo', e.target.value)}
+                  disabled={!breedSelected}
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label">Pest notes</label>
+                <input
+                  className="form-control"
+                  value={batchForm.pestInfo}
+                  onChange={(e) => handleBatchField('pestInfo', e.target.value)}
+                  disabled={!breedSelected}
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label">How to grow</label>
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  value={batchForm.howToGrow}
+                  onChange={(e) => handleBatchField('howToGrow', e.target.value)}
+                  disabled={!breedSelected}
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label">Trace / QR value (optional)</label>
+                <input
+                  className="form-control"
+                  value={batchForm.trace}
+                  onChange={(e) => handleBatchField('trace', e.target.value)}
+                  placeholder="tx hash or link"
+                  disabled={!breedSelected}
+                />
+              </div>
+              <div className="col-12 text-end">
+                <button className="btn btn-primary" disabled={savingBatch || !breedSelected}>
+                  {savingBatch ? 'Saving...' : breedSelected ? 'Create Batch' : 'Select a breed first'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlotSummaryCard({ info, loading, error }) {
+  if (loading) {
+    return (
+      <div className="card shadow-sm h-100">
+        <div className="card-body d-flex align-items-center justify-content-center">
+          <span className="text-muted">Loading plot details...</span>
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="card shadow-sm h-100">
+        <div className="card-body">
+          <div className="alert alert-warning mb-0">{error}</div>
+        </div>
+      </div>
+    );
+  }
+  if (!info) {
+    return (
+      <div className="card shadow-sm h-100">
+        <div className="card-body text-muted">
+          Scan a plot QR or enter a Plot ID to preview farmer details.
+        </div>
+      </div>
+    );
+  }
+
+  let photoSrc = null;
+  if (info.photo_file) {
+    if (info.photo_file.startsWith('http')) {
+      photoSrc = info.photo_file;
+    } else {
+      const base = CONFIG.API_BASE_URL.replace(/\/$/, '');
+      const path = info.photo_file.startsWith('/') ? info.photo_file : `/${info.photo_file}`;
+      photoSrc = `${base}${path}`;
+    }
+  }
+
+  return (
+    <div className="card shadow-sm h-100">
+      {photoSrc ? (
+        <img src={photoSrc} alt="Plot" className="card-img-top" style={{ maxHeight: 180, objectFit: 'cover' }} />
+      ) : (
+        <div
+          className="d-flex align-items-center justify-content-center bg-light text-muted"
+          style={{ height: 180, fontWeight: 600 }}
+        >
+          Plot #{info.id}
+        </div>
+      )}
       <div className="card-body">
-        <h5 className="mb-3">Add New Batch</h5>
-        <form onSubmit={submit} className="row g-3">
-          <div className="col-md-6">
-            <label className="form-label">Seed</label>
-            <input className="form-control form-control-lg border border-2" value={seed} onChange={e=>setSeed(e.target.value)} placeholder="Hybrid Maize" />
+        <h5 className="card-title mb-2">{info.plot_name}</h5>
+        <p className="mb-1">
+          <strong>Farmer:</strong> {info.farmer_name || 'Unknown'}
+        </p>
+        <p className="mb-1">
+          <strong>Location:</strong> {info.farmer_location || 'Not available'}
+        </p>
+        <p className="mb-1">
+          <strong>Area:</strong> {info.user_provided_area || '-'} acres
+        </p>
+        {info.description && (
+          <p className="text-muted mb-0">
+            <strong>Notes:</strong> {info.description}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function QRScannerModal({ title, onClose, onDetected }) {
+  const [hasDecoded, setHasDecoded] = useState(false);
+
+  return (
+    <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-md">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">{title}</h5>
+            <button type="button" className="btn-close" onClick={onClose}></button>
           </div>
-          <div className="col-md-6">
-            <label className="form-label">Breed</label>
-            <input className="form-control form-control-lg border border-2" value={breed} onChange={e=>setBreed(e.target.value)} placeholder="H-200" />
+          <div className="modal-body">
+            <Scanner
+              onScan={(text) => {
+                if (text && !hasDecoded) {
+                  setHasDecoded(true);
+                  onDetected(text);
+                }
+              }}
+              onError={(error) => console.error(error?.message || error)}
+              constraints={{ facingMode: 'environment' }}
+              style={{ width: '100%' }}
+            />
           </div>
-          <div className="col-md-4">
-            <label className="form-label">Total units</label>
-            <input type="number" min={1} className="form-control border border-2" value={total} onChange={e=>setTotal(e.target.value)} />
-            <div className="form-text">Total units produced for this batch.</div>
+          <div className="modal-footer">
+            <button className="btn btn-outline-secondary" onClick={onClose}>
+              Close
+            </button>
           </div>
-          <div className="col-12">
-            <label className="form-label">Test info</label>
-            <input className="form-control border border-2" value={testInfo} onChange={e=>setTestInfo(e.target.value)} />
-          </div>
-          <div className="col-12">
-            <label className="form-label">Pest notes</label>
-            <input className="form-control border border-2" value={pestInfo} onChange={e=>setPestInfo(e.target.value)} />
-          </div>
-          <div className="col-12">
-            <label className="form-label">How to grow</label>
-            <textarea className="form-control border border-2" rows={3} value={howToGrow} onChange={e=>setHowToGrow(e.target.value)} />
-          </div>
-          <div className="col-12 text-end">
-            <button className="btn btn-success">Create batch</button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -159,170 +498,234 @@ function NewBatchView({ onSave }) {
 
 /* ===================== Updated SellView — uses react-qr-scanner ===================== */
 function SellView({ batches, onRecord, onUpdateBatch }) {
-  const [plotId, setPlotId] = useState('');
-  const [batchId, setBatchId] = useState('');
+  const [plotInput, setPlotInput] = useState('');
+  const [plotInfo, setPlotInfo] = useState(null);
+  const [plotLoading, setPlotLoading] = useState(false);
+  const [plotError, setPlotError] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [farmData, setFarmData] = useState(null);
-
+  const [showPlotScanner, setShowPlotScanner] = useState(false);
   const [showBatchScanner, setShowBatchScanner] = useState(false);
-  const [showFarmerScanner, setShowFarmerScanner] = useState(false);
 
-  useEffect(()=> {
-    return () => {
-      // cleanup not required for react-qr-scanner
-    };
-  }, []);
+  const batchOptions = useMemo(
+    () =>
+      batches.map((b) => ({
+        value: String(b.id),
+        label: `${b.id} - ${b.seed}`,
+        data: b,
+      })),
+    [batches]
+  );
 
-  // helper to robustly extract text from scanner result
-  function extractTextFromScan(data) {
-    if (!data) return null;
-    // react-qr-scanner often returns a string; some wrappers return { text: '...' }
-    if (typeof data === 'string') return data;
-    if (data?.text) return data.text;
-    // some browsers return a result object with .data or .result
-    if (data?.data) return data.data;
-    if (data?.result) return data.result;
-    return String(data);
-  }
-
-  function handleBatchScan(result) {
-    const text = extractTextFromScan(result);
-    if (!text) return;
-    // try parse JSON -> {id: "..."} else treat as id
-    try {
-      const parsed = JSON.parse(text);
-      if (parsed.id) setBatchId(parsed.id);
-      else setBatchId(text);
-    } catch {
-      setBatchId(text);
+  useEffect(() => {
+    if (!plotInput) {
+      setPlotInfo(null);
+      setPlotError('');
+      return;
     }
-    setShowBatchScanner(false);
-    alert('Batch scanned: ' + (JSON.parse(text)?.id || text));
-  }
+    const timer = setTimeout(() => {
+      fetchPlotDetails(plotInput);
+    }, 500);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plotInput]);
 
-  function handleBatchError(err) {
-    console.warn('Batch scan error', err);
-    // keep scanner open so user can retry; optionally close on error
-  }
-
-  function handleFarmerScan(result) {
-    const text = extractTextFromScan(result);
-    if (!text) return;
+  const fetchPlotDetails = async (value) => {
+    if (!value) return;
+    setPlotLoading(true);
+    setPlotError('');
     try {
-      const parsed = JSON.parse(text);
-      setFarmData(parsed);
-    } catch {
-      setFarmData({ raw: text });
+      const response = await plotsAPI.getPublicDetails(value);
+      setPlotInfo(response.data);
+      setPlotError('');
+    } catch (err) {
+      const rawDetail = err?.response?.data?.detail;
+      const message =
+        typeof rawDetail === 'string'
+          ? rawDetail
+          : Array.isArray(rawDetail)
+          ? rawDetail.map((d) => d?.msg || JSON.stringify(d)).join(', ')
+          : err?.message || 'Unable to find plot';
+      setPlotInfo(null);
+      setPlotError(message);
+    } finally {
+      setPlotLoading(false);
     }
-    setShowFarmerScanner(false);
-    alert('Farmer scanned');
-  }
+  };
 
-  function handleFarmerError(err) {
-    console.warn('Farmer scan error', err);
-  }
+  const batchSelected = Boolean(selectedBatch);
 
   function submit(e){ 
     e && e.preventDefault();
-    if(!batchId||!plotId) return alert('Please provide both batch and plot ID.');
+    if(!batchSelected) return alert('Please select a batch.');
+    if(!plotInfo) return alert('Please select or scan a plot.');
     if(quantity <= 0) return alert('Quantity must be at least 1.');
     // create sale record
-    const sale = { id:'S-'+Math.floor(Math.random()*90000+1000), batchId, qty: Number(quantity), date: new Date().toISOString(), plot: plotId };
+    const sale = {
+      id:'S-'+Math.floor(Math.random()*90000+1000),
+      batchId: selectedBatch.value,
+      qty: Number(quantity),
+      date: new Date().toISOString(),
+      plot: plotInfo.id,
+      plotName: plotInfo.plot_name,
+    };
     onRecord(sale);
 
     // update local batch counts if caller provided onUpdateBatch
     if (typeof onUpdateBatch === 'function') {
-      onUpdateBatch(batchId, Number(quantity));
+      onUpdateBatch(selectedBatch.value, Number(quantity));
     }
 
     // reset fields
-    setPlotId(''); setBatchId(''); setQuantity(1); setFarmData(null);
+    setPlotInput(''); setPlotInfo(null); setSelectedBatch(null); setQuantity(1);
   }
+
+  const extractScannerText = (result) => {
+    if (!result) return '';
+    let payload = result;
+    if (Array.isArray(payload) && payload.length) {
+      payload = payload[0];
+    }
+    if (typeof payload === 'object') {
+      return payload?.text || payload?.rawValue || payload?.data || '';
+    }
+    return String(payload);
+  };
+
+  const handlePlotScan = (result) => {
+    console.log('QR plot scan raw result:', result);
+    const text = extractScannerText(result);
+    if (!text) return;
+    let value = text;
+    try {
+      const parsed = JSON.parse(text);
+      value = parsed.plot_id || parsed.id || parsed.plot || text;
+    } catch {
+      value = text;
+    }
+    setPlotInput(String(value));
+    setShowPlotScanner(false);
+  };
+
+  const handleBatchScan = (result) => {
+    console.log('QR batch scan raw result:', result);
+    const text = extractScannerText(result);
+    if (!text) return;
+    let value = text;
+    try {
+      const parsed = JSON.parse(text);
+      value = parsed.id || parsed.batchId || text;
+    } catch {
+      value = text;
+    }
+    const option = batchOptions.find((opt) => opt.value === String(value));
+    if (option) {
+      setSelectedBatch(option);
+    } else {
+      alert(`Batch ${value} not found in your inventory.`);
+    }
+    setShowBatchScanner(false);
+  };
+
+  const selectedBatchOption = selectedBatch;
 
   return (
     <div className="card shadow-sm">
       <div className="card-body">
         <h5 className="mb-3">Sell to Farmer</h5>
-
-        <form onSubmit={submit} className="row g-3">
-          <div className="col-md-6">
-            <label className="form-label">Plot ID</label>
-            <div className="input-group border border-2 rounded">
-              <input className="form-control border-0" value={plotId} onChange={e=>setPlotId(e.target.value)} placeholder="Scan or enter plot id" />
-              <button type="button" className="btn btn-outline-primary" onClick={()=>{ const v = prompt('Mock scan plot id'); if(v) setPlotId(v); }}>Scan</button>
-            </div>
-            <div className="form-text">Scan farmer's plot QR or type plot id.</div>
-          </div>
-
-          <div className="col-md-6">
-            <label className="form-label">Batch (scan pack QR)</label>
-            <div className="d-flex gap-2 align-items-center">
-              <select className="form-select border border-2" value={batchId} onChange={e=>setBatchId(e.target.value)}>
-                <option value="">Choose batch</option>
-                {batches.map(b=> <option key={b.id} value={b.id}>{b.id} — {b.seed}</option>)}
-              </select>
-              <button type="button" className="btn btn-outline-secondary" onClick={()=>setShowBatchScanner(true)} title="Open camera to scan pack QR"><AiOutlineQrcode/></button>
-            </div>
-            <div className="form-text">You can choose batch or scan the QR printed on pack.</div>
-
-            {showBatchScanner && (
-              <div className="mt-2 p-2 border rounded bg-light">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <div className="small fw-semibold">Batch QR Scanner</div>
-                  <button type="button" className="btn btn-sm btn-danger" onClick={()=>setShowBatchScanner(false)}>Close</button>
+        <div className="row g-3">
+          <div className="col-lg-7">
+            <form onSubmit={submit} className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label">Plot ID</label>
+                <div className="input-group border border-2 rounded">
+                  <input
+                    className="form-control border-0"
+                    value={plotInput}
+                    onChange={(e) => setPlotInput(e.target.value)}
+                    placeholder="Scan or enter plot id"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={() => setShowPlotScanner(true)}
+                  >
+                    <AiOutlineQrcode />
+                  </button>
                 </div>
-                <div style={{width:'100%'}}>
-                  qr
-                </div>
+                {plotError && <div className="text-danger small">{plotError}</div>}
+                <div className="form-text">Scan farmer's plot QR or type the Plot ID.</div>
               </div>
-            )}
-          </div>
 
-          <div className="col-md-4">
-            <label className="form-label">Quantity</label>
-            <div className="input-group border border-2 rounded">
-              <button type="button" className="btn btn-outline-secondary" onClick={()=>setQuantity(q=>Math.max(1,q-1))}>-</button>
-              <input type="number" min={1} className="form-control text-center border-0" value={quantity} onChange={e=>setQuantity(Number(e.target.value)||1)} />
-              <button type="button" className="btn btn-outline-secondary" onClick={()=>setQuantity(q=>q+1)}>+</button>
-            </div>
-            <div className="form-text">Units to sell from selected batch.</div>
-          </div>
-
-          <div className="col-md-8 d-flex align-items-start gap-3">
-            <div className="d-flex flex-column">
-              <button className="btn btn-success mb-2" type="submit"><FiShoppingCart className="me-1"/> Record Sale</button>
-              <div className="small text-muted">Recorded sale will update the batch remaining count.</div>
-            </div>
-
-            <div className="ms-3">
-              <div className="small text-muted mb-1">Scan farmer profile</div>
-              <div className="d-flex gap-2 align-items-center">
-                <button type="button" className="btn btn-outline-info btn-sm" onClick={()=>setShowFarmerScanner(true)} title="Scan farmer profile QR"><FiCamera/></button>
-                <div style={{minWidth:120}}>
-                  {farmData ? (
-                    <div>
-                      <div><strong>{farmData.name || farmData.id || 'Farmer'}</strong></div>
-                      <div className="text-muted small">{farmData.village || farmData.raw || ''}</div>
-                    </div>
-                  ) : <div className="text-muted small">No farmer scanned</div>}
+              <div className="col-md-6">
+                <label className="form-label">Batch</label>
+                <div className="d-flex gap-2 align-items-center">
+                  <div className="flex-grow-1">
+                    <Select
+                      classNamePrefix="seed-batch-select"
+                      options={batchOptions}
+                    value={selectedBatchOption}
+                    onChange={(option) => {
+                      setSelectedBatch(option);
+                    }}
+                      placeholder="Select batch"
+                      isClearable
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => setShowBatchScanner(true)}
+                    title="Scan batch QR"
+                  >
+                    <AiOutlineQrcode />
+                  </button>
                 </div>
               </div>
 
-              {showFarmerScanner && (
-                <div className="mt-2 p-2 border rounded bg-light">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <div className="small fw-semibold">Farmer QR Scanner</div>
-                    <button type="button" className="btn btn-sm btn-danger" onClick={()=>setShowFarmerScanner(false)}>Close</button>
-                  </div>
-                  <div>
-                   qr
+              <div className="col-md-4">
+                <label className="form-label">Quantity</label>
+                <div className="input-group border border-2 rounded">
+                  <button type="button" className="btn btn-outline-secondary" onClick={()=>setQuantity(q=>Math.max(1,q-1))}>-</button>
+                  <input type="number" min={1} className="form-control text-center border-0" value={quantity} onChange={e=>setQuantity(Number(e.target.value)||1)} />
+                  <button type="button" className="btn btn-outline-secondary" onClick={()=>setQuantity(q=>q+1)}>+</button>
+                </div>
+                <div className="form-text">Units to sell from the selected batch.</div>
+              </div>
+
+              <div className="col-md-8 d-flex align-items-end">
+                <div>
+                  <button className="btn btn-success mb-2" type="submit" disabled={!plotInfo || !batchSelected}>
+                    <FiShoppingCart className="me-1"/> Record Sale
+                  </button>
+                  <div className="small text-muted">
+                    Recorded sale updates batch inventory automatically.
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            </form>
           </div>
+          <div className="col-lg-5">
+            <PlotSummaryCard info={plotInfo} loading={plotLoading} error={plotError} />
+          </div>
+        </div>
 
-        </form>
+        {(showPlotScanner || showBatchScanner) && (
+          <QRScannerModal
+            title={showPlotScanner ? 'Scan Plot QR' : 'Scan Batch QR'}
+            onClose={() => {
+              setShowPlotScanner(false);
+              setShowBatchScanner(false);
+            }}
+            onDetected={(result) => {
+              if (showPlotScanner) {
+                handlePlotScan(result);
+              } else {
+                handleBatchScan(result);
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -376,11 +779,78 @@ function SalesAnalytics({ sales }) {
 export default function SeedSellerDashboard() {
   const [view, setView] = useState('batches');
   const [batches, setBatches] = useLocalStorage('demo_batches', DEMO_BATCHES);
+  const [breeds, setBreeds] = useLocalStorage('demo_breeds', []);
   const [sales, setSales] = useLocalStorage('demo_sales', DEMO_SALES);
   const [activity, setActivity] = useLocalStorage('demo_activity', ['Demo activity loaded']);
   const [user, setUser] = useLocalStorage('demo_user', { name: 'DemoSeller' });
+  const [loadingSeedData, setLoadingSeedData] = useState(false);
+  const [seedError, setSeedError] = useState('');
 
-  function addBatch(b) { setBatches(prev => { const next = [b, ...prev]; setActivity(a=>[`Added batch ${b.id}`, ...a]); return next; }); setView('batches'); }
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+      } catch {
+        // ignore
+      }
+    }
+    syncSeedData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function syncSeedData() {
+    setLoadingSeedData(true);
+    setSeedError('');
+    try {
+      const [breedsRes, batchesRes] = await Promise.all([
+        seedAPI.listBreeds(),
+        seedAPI.listBatches(),
+      ]);
+      setBreeds(breedsRes.data);
+      setBatches(batchesRes.data);
+    } catch (err) {
+      console.error(err);
+      const message = err?.response?.data?.detail || 'Unable to sync seed data. Showing cached/demo data.';
+      setSeedError(message);
+      if (!Array.isArray(breeds) || !breeds.length) {
+        setBreeds([]);
+      }
+      if (!Array.isArray(batches) || !batches.length) {
+        setBatches(DEMO_BATCHES);
+      }
+    } finally {
+      setLoadingSeedData(false);
+    }
+  }
+
+  async function handleCreateBreed(payload) {
+    try {
+      const response = await seedAPI.createBreed(payload);
+      setBreeds((prev) => [response.data, ...prev]);
+      setActivity((a) => [`Created breed ${response.data.breed}`, ...a]);
+      return { success: true };
+    } catch (err) {
+      const message = err?.response?.data?.detail || 'Failed to create breed';
+      setSeedError(message);
+      return { success: false, error: message };
+    }
+  }
+
+  async function handleCreateBatch(payload) {
+    try {
+      const response = await seedAPI.createBatch(payload);
+      setBatches((prev) => [response.data, ...prev]);
+      setActivity((a) => [`Created batch ${response.data.id}`, ...a]);
+      setView('batches');
+      return { success: true };
+    } catch (err) {
+      const message = err?.response?.data?.detail || 'Failed to create batch';
+      setSeedError(message);
+      return { success: false, error: message };
+    }
+  }
 
   function recordSale(s) {
     setSales(prev => { const next = [s, ...prev]; setActivity(a=>[`Recorded sale ${s.id} (${s.qty})`, ...a]);
@@ -408,10 +878,18 @@ export default function SeedSellerDashboard() {
           <div className="badge bg-light text-dark d-flex align-items-center gap-2"><FiUser/> {user?.name}</div>
         </div>
       </div>
+      {seedError && <div className="alert alert-warning py-2">{seedError}</div>}
 
       <TopActions active={view} onChange={setView} />
 
-      {view === 'new' && <NewBatchView onSave={addBatch} />}
+      {view === 'new' && (
+        <NewBatchView
+          breeds={breeds}
+          onCreateBreed={handleCreateBreed}
+          onCreateBatch={handleCreateBatch}
+          loading={loadingSeedData}
+        />
+      )}
 
       {view === 'batches' && (
         <div className="row g-3">

@@ -1,5 +1,6 @@
 const CONFIG = {
   API_BASE_URL: "http://127.0.0.1:8000",
+  GOOGLE_MAPS_API_KEY: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyA-Y7KnFS2ovNEa03z6WC89NpKP8y1A9Zg",
 };
 
 export default CONFIG;

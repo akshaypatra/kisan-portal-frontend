@@ -1,46 +1,111 @@
-import React from 'react';
-import authService from '../services/authService';
+import React from "react";
+import authService from "../services/authService";
+import StorageProvider from "../Components/Storage-components/StorageContext";
+import StorageSummaryCards from "../Components/Storage-components/StorageSummaryCards";
+import FacilityPerformanceTable from "../Components/Storage-components/FacilityPerformanceTable";
+import StorageRequestsBoard from "../Components/Storage-components/StorageRequestsBoard";
+import StorageInventoryBoard from "../Components/Storage-components/StorageInventoryBoard";
+import StorageAlertCenter from "../Components/Storage-components/StorageAlertCenter";
+import StorageTaskPanel from "../Components/Storage-components/StorageTaskPanel";
+import StorageInsights from "../Components/Storage-components/StorageInsights";
+import StorageFacilityForm from "../Components/Storage-components/StorageFacilityForm";
 
-const StorageDashboard = () => {
+function StorageDashboardView() {
   const user = authService.getStoredUser();
 
   return (
-    <div className="container mt-4">
-      {/* Header with Kisan Portal gradient styling */}
+    <div className="storage-dashboard container py-4">
+      <style>
+        {`
+        .storage-dashboard {
+          background: linear-gradient(180deg, #f0f9f4 0%, #ffffff 50%);
+          min-height: calc(100vh - 80px);
+        }
+        `}
+      </style>
+
       <div
+        className="p-4 mb-4 text-white rounded-4 shadow-sm"
         style={{
-          background: 'linear-gradient(135deg, #4CAF50, #2E7D32)',
-          borderRadius: '12px',
-          padding: '30px',
-          color: 'white',
-          marginBottom: '30px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          background: "linear-gradient(135deg, #2e7d32, #1b5e20)",
         }}
       >
-        <h2 className="mb-2">Welcome, {user?.name || 'Storage Manager'}!</h2>
-        <p className="lead mb-0">Role: Storage / भंडारण</p>
+        <div className="d-flex align-items-center justify-content-between">
+          <div>
+            <div className="text-uppercase small" style={{ opacity: 0.8 }}>
+              Storage Network Control
+            </div>
+            <h2 className="fw-bold mb-1">Welcome, {user?.name || "Storage Manager"}</h2>
+            <p className="mb-0">
+              Monitor utilization, requests, alerts, and logistics in one place.
+            </p>
+          </div>
+          <div className="text-end">
+            <div className="fs-1 fw-bold">Live</div>
+            <small style={{ opacity: 0.7 }}>Updated just now</small>
+          </div>
+        </div>
       </div>
 
-      {/* Simple info card */}
-      <div className="card shadow-sm">
-        <div className="card-body">
-          <h5 className="card-title text-success">
-            <i className="bi bi-box-seam me-2"></i>
-            Storage Dashboard
-          </h5>
-          <p className="card-text">
-            Your personalized storage dashboard is under development. Soon you will be able to:
-          </p>
-          <ul>
-            <li>Monitor storage capacity and utilization rates</li>
-            <li>Track current stock levels across facilities</li>
-            <li>Manage warehouse operations and logistics</li>
-            <li>Generate revenue reports from storage services</li>
-          </ul>
+      <div className="row g-4 mb-4">
+        <div className="col-lg-5">
+          <StorageFacilityForm />
+        </div>
+        <div className="col-lg-7">
+          <div className="card shadow-sm h-100 rounded-4">
+            <div className="card-body">
+              <h5>Why register facilities?</h5>
+              <p className="text-muted mb-3">
+                Onboarded warehouses appear across the value chain, enabling precision routing of
+                harvest lots, real-time utilization tracking, and policy-facing visibility.
+              </p>
+              <ul className="text-muted small mb-0">
+                <li>Unlock farmer self-service booking with validated capacity</li>
+                <li>Feed AI models that forecast congestion and spoilage risk</li>
+                <li>Expose sensor + compliance metadata for traceability</li>
+                <li>Enable incentive payouts tied to turnaround and loss reduction</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <StorageSummaryCards />
+
+      <div className="row g-4 mb-4">
+        <div className="col-lg-7">
+          <FacilityPerformanceTable />
+        </div>
+        <div className="col-lg-5">
+          <StorageRequestsBoard />
+        </div>
+      </div>
+
+      <div className="row g-4 mb-4">
+        <div className="col-lg-7">
+          <StorageInventoryBoard />
+        </div>
+        <div className="col-lg-5">
+          <StorageAlertCenter />
+        </div>
+      </div>
+
+      <div className="row g-4">
+        <div className="col-lg-4">
+          <StorageTaskPanel />
+        </div>
+        <div className="col-lg-8">
+          <StorageInsights />
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default StorageDashboard;
+export default function StorageDashboard() {
+  return (
+    <StorageProvider>
+      <StorageDashboardView />
+    </StorageProvider>
+  );
+}

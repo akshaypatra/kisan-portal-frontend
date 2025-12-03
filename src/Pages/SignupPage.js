@@ -10,6 +10,7 @@ export default function SignupPage() {
     password: '',
     role: 'farmer',
     agristack_id: '',
+    storageOwnerType: 'storage_business',
   });
 
   const [loading, setLoading] = useState(false);
@@ -24,6 +25,12 @@ export default function SignupPage() {
     { value: 'manufacturer', label: 'Manufacturer / निर्माता' },
     { value: 'retailer', label: 'Retailer / खुदरा विक्रेता' },
     { value: 'policy_maker', label: 'Policy Maker / नीति निर्माता' },
+  ];
+
+  const ownerTypeOptions = [
+    { value: 'storage_business', label: 'Storage Business' },
+    { value: 'fpo', label: 'Farmer Producer Organization' },
+    { value: 'company_center', label: 'Company Collection Center' },
   ];
 
   const validate = () => {
@@ -44,6 +51,11 @@ export default function SignupPage() {
       return false;
     }
 
+    if (role === 'storage' && !credentials.storageOwnerType) {
+      alert('Please select the storage owner type');
+      return false;
+    }
+
     return true;
   };
 
@@ -58,6 +70,10 @@ export default function SignupPage() {
         password: credentials.password,
         role: credentials.role,
       };
+
+      if (credentials.role === 'storage') {
+        payload.storage_owner_type = credentials.storageOwnerType;
+      }
 
       // Call backend register API
       const data = await authService.register(payload);
@@ -127,7 +143,46 @@ export default function SignupPage() {
                       Sign Up
                     </button>
                   </div>
+                  {/* Role Selection */}
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
+                      <Briefcase size={18} /> Role / भूमिका
+                    </label>
+                    <select
+                      className="form-select border-success"
+                      value={credentials.role}
+                      onChange={(e) =>
+                        setCredentials({ ...credentials, role: e.target.value })
+                      }
+                    >
+                      {roles.map((role) => (
+                        <option key={role.value} value={role.value}>
+                          {role.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
+                  {credentials.role === 'storage' && (
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
+                        Owner Type
+                      </label>
+                      <select
+                        className="form-select border-success"
+                        value={credentials.storageOwnerType}
+                        onChange={(e) =>
+                          setCredentials({ ...credentials, storageOwnerType: e.target.value })
+                        }
+                      >
+                        {ownerTypeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   {/* Name */}
                   <div className="mb-3">
                     <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
@@ -179,25 +234,7 @@ export default function SignupPage() {
                     />
                   </div>
 
-                  {/* Role Selection */}
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
-                      <Briefcase size={18} /> Role / भूमिका
-                    </label>
-                    <select
-                      className="form-select border-success"
-                      value={credentials.role}
-                      onChange={(e) =>
-                        setCredentials({ ...credentials, role: e.target.value })
-                      }
-                    >
-                      {roles.map((role) => (
-                        <option key={role.value} value={role.value}>
-                          {role.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  
 
                   <button
                     onClick={handleSignup}

@@ -8,8 +8,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
@@ -167,31 +165,6 @@ export default function MandiMarketDashboardRedux() {
     const arr = Array.from(map.entries()).map(([commodity, value]) => ({ commodity, value }));
     return arr.sort((a,b)=>b.value - a.value).slice(0, 10);
   }, [filteredRecords]);
-
-  const timeSeriesData = useMemo(() => {
-    if (!timeSeriesCommodity) return [];
-    // group by arrival_date and take average modal per date for the selected commodity
-    const map = new Map();
-    for (const r of filteredRecords) {
-      if ((r.commodity || '') !== timeSeriesCommodity) continue;
-      const date = r.arrival_date || r.arrivalDate || r.date || r.transaction_date || '';
-      if (!date) continue;
-      const key = String(date).split('T')[0];
-      const v = Number(r.modal_price ?? r.modal ?? r.modalprice ?? r.modalPrice);
-      if (!map.has(key)) map.set(key, { sum: 0, count: 0 });
-      if (Number.isFinite(v)) {
-        const e = map.get(key);
-        e.sum += v; e.count += 1; map.set(key, e);
-      }
-    }
-    const arr = [];
-    for (const [date, { sum, count }] of map.entries()) {
-      arr.push({ date, avgModal: count ? sum/count : null });
-    }
-    // sort by date ascending
-    arr.sort((a,b)=>a.date.localeCompare(b.date));
-    return arr.slice(-60); // last 60 days/points for readability
-  }, [filteredRecords, timeSeriesCommodity]);
 
   function onSelectChange(e) {
     const { name, value } = e.target;

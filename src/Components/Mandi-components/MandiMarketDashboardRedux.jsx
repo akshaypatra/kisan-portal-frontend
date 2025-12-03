@@ -61,6 +61,7 @@ export default function MandiMarketDashboardRedux() {
   });
 
   // Chart selection
+  //eslint-disable-next-line no-unused-vars
   const [timeSeriesCommodity, setTimeSeriesCommodity] = useState('');
 
   // Fetch once on mount with a big limit (client-side paging)

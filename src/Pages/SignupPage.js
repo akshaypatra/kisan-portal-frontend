@@ -21,6 +21,7 @@ export default function SignupPage() {
     { value: 'seed_seller', label: 'Seed Seller / बीज विक्रेता' },
     { value: 'fpo', label: 'FPO / किसान उत्पादक संगठन' },
     { value: 'trader', label: 'Trader / व्यापारी' },
+    { value: 'transport', label: 'Transport / परिवहन' },
     { value: 'storage', label: 'Storage / भंडारण' },
     { value: 'manufacturer', label: 'Manufacturer / निर्माता' },
     { value: 'retailer', label: 'Retailer / खुदरा विक्रेता' },

@@ -13,6 +13,7 @@ import {
   FaTractor,
   FaChartBar,
   FaMapMarkedAlt,
+  FaTruck,
 } from "react-icons/fa";
 import {
   ResponsiveContainer,
@@ -84,6 +85,12 @@ export default function Dashboard() {
       icon: <FaSeedling size={32} />,
       path: "/sell-crops",
       color: "#8BC34A",
+    },
+    {
+      name: "Book Transport",
+      icon: <FaTruck size={32} />,
+      path: "/book-transport",
+      color: "#10b981",
     },
   ];
 

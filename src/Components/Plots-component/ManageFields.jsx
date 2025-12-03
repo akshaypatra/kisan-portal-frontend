@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
+import { MapContainer, TileLayer, Polygon, Marker } from "react-leaflet";
 
 /**
  * ManageFields.jsx (earthy theme — avoids red)
@@ -164,6 +165,24 @@ export default function ManageFields() {
   }
 
   function mapPlotToField(plot) {
+    const polygonCoords =
+      plot.polygon_coordinates && Array.isArray(plot.polygon_coordinates.coordinates)
+        ? plot.polygon_coordinates.coordinates[0] || []
+        : [];
+    const mapPolygon = polygonCoords.map(([lng, lat]) => [lat, lng]);
+    const markerPoint =
+      Array.isArray(plot.markers) && plot.markers.length
+        ? { lat: plot.markers[0].lat, lng: plot.markers[0].lng }
+        : null;
+    const centroid =
+      mapPolygon.length > 0
+        ? {
+            lat: mapPolygon.reduce((sum, p) => sum + p[0], 0) / mapPolygon.length,
+            lng: mapPolygon.reduce((sum, p) => sum + p[1], 0) / mapPolygon.length,
+          }
+        : null;
+    const mapCenter = markerPoint || centroid;
+
     const calculated = plot.calculated_area_sqm
       ? +(plot.calculated_area_sqm / SQM_PER_ACRE).toFixed(2)
       : 0;
@@ -200,6 +219,8 @@ export default function ManageFields() {
         })),
       last_updated: plot.updated_at ? plot.updated_at.slice(0, 10) : "",
       isRemote: true,
+      map_center: mapCenter,
+      map_polygon: mapPolygon,
     };
   }
 
@@ -671,6 +692,25 @@ export default function ManageFields() {
                       <div style={{ fontWeight: 700 }}>{f.last_updated ?? "-"}</div>
                     </div>
                   </div>
+
+                  {f.map_center && (
+                    <div className="mt-2 rounded-3 overflow-hidden border" style={{ height: 200 }}>
+                      <MapContainer
+                        center={[f.map_center.lat, f.map_center.lng]}
+                        zoom={15}
+                        style={{ height: "100%", width: "100%" }}
+                        scrollWheelZoom={false}
+                        dragging={false}
+                        doubleClickZoom={false}
+                      >
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        {Array.isArray(f.map_polygon) && f.map_polygon.length > 0 && (
+                          <Polygon pathOptions={{ color: "#2f7a3a" }} positions={f.map_polygon} />
+                        )}
+                        <Marker position={[f.map_center.lat, f.map_center.lng]} />
+                      </MapContainer>
+                    </div>
+                  )}
 
                   <hr />
 

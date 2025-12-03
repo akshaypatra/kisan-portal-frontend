@@ -29,6 +29,9 @@ const DashboardRouter = () => {
       case 'trader':
         navigate('/trader-dashboard');
         break;
+      case 'transport':
+        navigate('/transport-dashboard');
+        break;
       case 'storage':
         navigate('/storage-dashboard');
         break;

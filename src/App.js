@@ -29,6 +29,10 @@ import ManufacturerDashboard from './Pages/ManufacturerDashboard';
 import RetailerDashboard from './Pages/RetailerDashboard';
 import PolicyMakerDashboard from './Pages/PolicyMakerDashboard';
 import CropPlanning from './Pages/Farmers/CropPlanning';
+import TransportDashboard from './Pages/TransportDashboard';
+import BookTransportPage from './Pages/Farmers/BookTransportPage';
+import DriverLoginPage from './Pages/DriverLoginPage';
+import DriverDashboard from './Pages/DriverDashboard';
 
 function App() {
   return (
@@ -50,12 +54,16 @@ function App() {
             <Route path="/fpo-dashboard" element={<FPODashboard />} />
             <Route path="/trader-dashboard" element={<TraderDashboard />} />
             <Route path="/storage-dashboard" element={<StorageDashboard />} />
+            <Route path="/transport-dashboard" element={<TransportDashboard />} />
             <Route path="/manufacturer-dashboard" element={<ManufacturerDashboard />} />
             <Route path="/retailer-dashboard" element={<RetailerDashboard />} />
             <Route path="/policy-maker-dashboard" element={<PolicyMakerDashboard />} />
 
             {/* Other Routes */}
             <Route path="/plot-registration" element={<PlotRegistration />} />
+            <Route path="/book-transport" element={<BookTransportPage />} />
+            <Route path="/driver-login" element={<DriverLoginPage />} />
+            <Route path="/driver-dashboard" element={<DriverDashboard />} />
             <Route path="/mandi-prices"
                   element={<Provider store={store}>
                       <MandiMarketDashboardRedux />

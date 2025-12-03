@@ -28,6 +28,8 @@ import {
   Cell,
   Legend,
 } from "recharts";
+import QRCode from "react-qr-code";
+import api from "../../services/api";
 
 /**
  * Dashboard:
@@ -39,12 +41,22 @@ import {
  * Note: ensure `recharts` is installed: `npm i recharts`
  */
 
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000/api/auth";
+const PLOTS_ENDPOINT = "/api/plots";
 const SQM_PER_ACRE = 4046.85642;
+
+const getStoredUser = () => {
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const farmerId = Number(localStorage.getItem("farmer_id")) || 1;
+  const currentUser = getStoredUser();
+  const farmerId = currentUser?.id;
   const [fields, setFields] = useState([]);
   const [loadingPlots, setLoadingPlots] = useState(false);
 
@@ -124,10 +136,10 @@ export default function Dashboard() {
     ],
     []
   );
-
-  useEffect(() => {
-    setFields(baseSampleFields.map(normalizeSampleField));
-  }, [baseSampleFields]);
+  const normalizedSampleFields = useMemo(
+    () => baseSampleFields.map(normalizeSampleField),
+    [baseSampleFields]
+  );
 
   useEffect(() => {
     fetchPlots();
@@ -140,49 +152,94 @@ export default function Dashboard() {
       const areaFromRatio = area_acres * ((c.ratio || 0) / 100);
       return { ...c, area_acres: +areaFromRatio.toFixed(2), ratio: c.ratio ?? 0 };
     });
-    return { ...f, area_acres: +area_acres.toFixed(2), crops };
+    return { ...f, area_acres: +area_acres.toFixed(2), crops, routeKey: String(f.id) };
   }
 
   function mapPlotToField(plot) {
-    const area_acres = plot.calculated_area_sqm ? +(plot.calculated_area_sqm / SQM_PER_ACRE).toFixed(2) : 0;
-    const cycles = (plot.cycles || []).filter((c) => c.status !== "Harvested");
-    const totalArea = area_acres || cycles.reduce((s, c) => s + (c.area_acres || 0), 0);
-    const crops = cycles.map((c) => {
-      const ratio = totalArea > 0 ? ((c.area_acres || 0) / totalArea) * 100 : 100;
-      const estYieldTPerHa = (c.area_acres || 0) > 0 ? ((c.harvested_qty_total || 0) / 1000) / ((c.area_acres || 0) * 0.404686) : 0;
+    const derivedAreaAcres = plot.calculated_area_sqm
+      ? +(plot.calculated_area_sqm / SQM_PER_ACRE).toFixed(2)
+      : +(plot.user_provided_area || 0);
+    const cropCycles = Array.isArray(plot.crop_cycles)
+      ? plot.crop_cycles
+      : Array.isArray(plot.cycles)
+      ? plot.cycles
+      : [];
+    const activeCycles = cropCycles.filter(
+      (c) => (c.status || "").toLowerCase() !== "harvested"
+    );
+    const fallbackArea = activeCycles.reduce((sum, c) => sum + (c.area_acres || 0), 0);
+    const totalArea = derivedAreaAcres || fallbackArea || 0;
+
+    const crops = activeCycles.map((c) => {
+      const area = c.area_acres || 0;
+      const ratio = totalArea > 0 ? (area / totalArea) * 100 : 100;
+      const harvestEvents = (c.harvest_events || c.harvests || []).map((event) => ({
+        id: event.id,
+        harvested_on: event.harvested_on,
+        harvested_qty: event.harvested_qty,
+        harvested_area_acres: event.harvested_area_acres,
+      }));
+      const harvestedQtyTotal =
+        c.harvested_qty_total ??
+        harvestEvents.reduce((sum, evt) => sum + (evt.harvested_qty || 0), 0);
+      const estYieldTPerHa =
+        area > 0
+          ? ((harvestedQtyTotal || 0) / 1000) / (area * 0.404686)
+          : 0;
+
       return {
         name: c.crop_name,
         ratio: +ratio.toFixed(2),
         yield_t_per_ha: +estYieldTPerHa.toFixed(2),
         stage: c.status,
-        area_acres: c.area_acres,
-        harvests: c.harvests || [],
-        harvested_qty_total: c.harvested_qty_total || 0,
-        harvested_area_total: c.harvested_area_total || 0,
+        area_acres: area,
+        harvests: harvestEvents,
+        harvested_qty_total: harvestedQtyTotal || 0,
+        harvested_area_total:
+          c.harvested_area_total ??
+          harvestEvents.reduce(
+            (sum, evt) => sum + (evt.harvested_area_acres || 0),
+            0
+          ),
       };
     });
-    return {
-      id: `db-${plot.id}`,
-      name: plot.plot_name,
-      area_ha: area_acres * 0.404686,
-      area_acres,
+
+  const areaHa = totalArea * 0.404686;
+
+  return {
+    id: `db-${plot.id}`,
+    dbId: plot.id,
+    routeKey: String(plot.id),
+    name: plot.plot_name,
+      area_ha: +areaHa.toFixed(2),
+      area_acres: +totalArea.toFixed(2),
       stage: (plot.status && (plot.status.stage || plot.status.status)) || "Registered",
       crops,
-      last_updated: plot.created_at ? plot.created_at.slice(0, 10) : "",
+      last_updated: plot.updated_at
+        ? plot.updated_at.slice(0, 10)
+        : plot.created_at
+        ? plot.created_at.slice(0, 10)
+        : "",
     };
   }
 
   async function fetchPlots() {
     setLoadingPlots(true);
     try {
-      const res = await fetch(`${API_BASE}/with-cycles/${farmerId}`);
-      if (!res.ok) throw new Error("Failed to fetch plots");
-      const data = await res.json();
-      const mapped = data.map(mapPlotToField);
-      setFields([...mapped, ...baseSampleFields.map(normalizeSampleField)]);
+      if (!farmerId) {
+        setFields(normalizedSampleFields);
+        return;
+      }
+      const { data } = await api.get(`${PLOTS_ENDPOINT}/with-cycles/${farmerId}`);
+      const mapped = Array.isArray(data) ? data.map(mapPlotToField) : [];
+      setFields(mapped);
     } catch (err) {
       console.error(err);
-      setFields(baseSampleFields.map(normalizeSampleField));
+      if (err?.response?.status === 404) {
+        setFields([]);
+      } else {
+        setFields(normalizedSampleFields);
+      }
     } finally {
       setLoadingPlots(false);
     }
@@ -545,8 +602,20 @@ export default function Dashboard() {
 
           <div className="row g-4">
             {fields.map((field, fIdx) => {
+              const declaredAcres = Number(field.area_acres) || Number(field.area_ha || 0) / 0.404686 || 0;
+              const usedAcres = (field.crops || []).reduce(
+                (sum, c) => sum + (Number(c.area_acres) || 0),
+                0
+              );
+              const remainingAcres = Math.max(0, +(declaredAcres - usedAcres).toFixed(2));
               const totalRatio = field.crops.reduce((s, c) => s + (c.ratio || 0), 0) || 0;
               const remainder = Math.max(0, 100 - totalRatio);
+              const plotIdentifier = field.dbId ?? field.id;
+              const routeKey = field.routeKey || (field.dbId ? String(field.dbId) : String(field.id));
+              const qrValue = JSON.stringify({
+                plot_id: plotIdentifier,
+                plot_name: field.name,
+              });
               return (
                 <div key={field.id} className="col-12 col-md-6 col-lg-4 d-flex">
                   <div className="card field-card shadow-sm w-100">
@@ -575,6 +644,19 @@ export default function Dashboard() {
                     </div>
 
                     <div className="field-body">
+                      <div className="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                          <div className="small text-muted">Plot ID</div>
+                          <div className="fw-bold text-success">
+                            #{plotIdentifier}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <QRCode value={qrValue} size={80} bgColor="#ffffff" />
+                          <div className="small text-muted mt-1">Scan plot</div>
+                        </div>
+                      </div>
+
                       <div className="crop-badges">
                         {field.crops.map((c, i) => (
                           <span
@@ -647,8 +729,30 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-                        <button className="btn btn-sm btn-outline-success" onClick={()=>{navigate("/manage-fields")}}>Manage</button>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, gap: 8 }}>
+                        <button
+                          className="btn btn-sm btn-outline-success"
+                          onClick={() => {
+                            navigate(`/manage-fields/${routeKey}`);
+                          }}
+                        >
+                          Manage
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-primary"
+                          disabled={remainingAcres <= 0}
+                          title={
+                            remainingAcres > 0
+                              ? "Plan crops for the unused area"
+                              : "No free area left"
+                          }
+                          onClick={() => {
+                            if (remainingAcres <= 0) return;
+                            navigate(`/crop-planning/${routeKey}`);
+                          }}
+                        >
+                          Crop Plan
+                        </button>
                       </div>
                     </div>
                   </div>

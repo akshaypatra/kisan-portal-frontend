@@ -6,6 +6,7 @@ import * as turf from "@turf/turf";
 import exifr from "exifr";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
+import api, { plotsAPI } from "../../services/api";
 
 // Fix icon paths for many bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -15,7 +16,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
 
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000/api/auth";
+const PLOTS_ENDPOINT = "/api/plots";
 
 export default function PlotRegistrationForm() {
   // form state
@@ -25,10 +26,15 @@ export default function PlotRegistrationForm() {
   const [coords, setCoords] = useState([]); // finalized polygon coords [[lat,lng],...]
   const [markers, setMarkers] = useState([]); // generic markers (photo/device/point mode)
   const [calculatedAreaSqM, setCalculatedAreaSqM] = useState(0);
+  const [stateName, setStateName] = useState("");
+  const [cityName, setCityName] = useState("");
+  const [villageName, setVillageName] = useState("");
 
-  const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoGeo, setPhotoGeo] = useState(null);
+  const [photoUploadPath, setPhotoUploadPath] = useState(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -198,8 +204,9 @@ export default function PlotRegistrationForm() {
   async function handlePhotoChange(e) {
     const file = e.target.files[0];
     if (!file) return;
-    setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
+    setPhotoUploadError("");
+    setPhotoUploadPath(null);
     try {
       const gps = await exifr.gps(file);
       if (gps && gps.latitude && gps.longitude) {
@@ -220,6 +227,29 @@ export default function PlotRegistrationForm() {
       }
     } catch (err) {
       console.warn("EXIF read failed", err);
+    }
+
+    try {
+      setPhotoUploading(true);
+      const response = await plotsAPI.uploadPhoto(file);
+      const data = response?.data || {};
+      const path = data.relative_path || data.path || "";
+      if (!path) {
+        setPhotoUploadError("Photo uploaded but no path returned.");
+      } else {
+        setPhotoUploadPath(path);
+        setPhotoUploadError("");
+      }
+    } catch (err) {
+      console.error(err);
+      const msg =
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Failed to upload photo.";
+      setPhotoUploadError(msg);
+      alert(msg);
+    } finally {
+      setPhotoUploading(false);
     }
   }
 
@@ -263,6 +293,13 @@ export default function PlotRegistrationForm() {
     setCalculatedAreaSqM(0);
     setTempPoints([]);
     setPointMode(false);
+    setPhotoPreview(null);
+    setPhotoGeo(null);
+    setPhotoUploadPath(null);
+    setPhotoUploadError("");
+    setStateName("");
+    setCityName("");
+    setVillageName("");
     const fg = fgRef.current;
     if (fg && fg._layers) {
       Object.keys(fg._layers).forEach(k => fg.removeLayer(fg._layers[k]));
@@ -270,42 +307,92 @@ export default function PlotRegistrationForm() {
   }
 
   function copyJSON() {
-    const data = { plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, markers, photoGeo, photoFile: photoFile ? photoFile.name : null };
+    const data = { plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, markers, photoGeo, photoFile: photoUploadPath };
     navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => alert("Copied JSON to clipboard"));
   }
 
   function sqmToHa(sqm) { return (sqm / 10000).toFixed(3); }
   function sqmToAcres(sqm) { return (sqm / 4046.85642).toFixed(3); }
 
+  const toGeoJSONPolygon = (points) => {
+    if (!points || points.length < 3) return null;
+    const ring = points.map(([lat, lng]) => [lng, lat]);
+    // close polygon
+    if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) {
+      ring.push(ring[0]);
+    }
+    return {
+      type: "Polygon",
+      coordinates: [ring],
+    };
+  };
+
+  const normalizeMarkers = (points) =>
+    points.map(([lat, lng]) => ({
+      lat,
+      lng,
+    }));
+
+  const normalizePhotoGeo = (value) => {
+    if (!value || value.length < 2) return null;
+    return { lat: value[0], lng: value[1] };
+  };
+
   async function handleSubmit(e) {
     e.preventDefault();
-    const farmerId = Number(localStorage.getItem("farmer_id")) || 1;
+    if (coords.length < 3) {
+      alert("Draw the plot boundary on the map before saving.");
+      return;
+    }
+
+    const parsedArea = parseFloat(areaInput);
+    const geojsonPolygon = toGeoJSONPolygon(coords);
     const payload = {
-      farmer_id: farmerId,
-      plotName: plotName || "Untitled plot",
-      description,
-      userProvidedArea: areaInput,
-      calculatedAreaSqM,
-      polygonCoordinates: coords,
-      markers,
-      photoGeo,
-      photoFile: photoFile ? photoFile.name : null,
-      status: { stage: "Registered" },
+      plot_name: plotName || "Untitled plot",
+      description: description || null,
+      user_provided_area: Number.isFinite(parsedArea)
+        ? parsedArea
+        : calculatedAreaSqM
+        ? Number((calculatedAreaSqM / 4046.85642).toFixed(2))
+        : 0,
+      calculated_area_sqm: calculatedAreaSqM || null,
+      polygon_coordinates: geojsonPolygon || {},
+      markers: normalizeMarkers(markers),
+      photo_geo: normalizePhotoGeo(photoGeo),
+      photo_file: photoUploadPath,
+      status: {
+        stage: "Registered",
+        location: {
+          state: stateName || null,
+          city: cityName || null,
+          village: villageName || null,
+        },
+      },
     };
+
+    if (!payload.polygon_coordinates || !Object.keys(payload.polygon_coordinates).length) {
+      alert("Unable to build polygon payload. Please redraw the field boundary.");
+      return;
+    }
+
+    if (photoPreview && !photoUploadPath) {
+      alert("Photo upload is still in progress. Please wait.");
+      return;
+    }
+
     setSubmitting(true);
     setSubmitMessage("");
     try {
-      const res = await fetch(`${API_BASE}/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to save plot");
-      const data = await res.json();
-      setSubmitMessage(`Saved to backend with id ${data.plot_id || ""}`.trim());
+      const { data } = await api.post(`${PLOTS_ENDPOINT}/create`, payload);
+      setSubmitMessage(`Saved to backend with id ${data?.id ?? ""}`.trim());
     } catch (err) {
       console.error(err);
-      setSubmitMessage("Could not save plot to backend. Check network/API.");
+      const msg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Could not save plot to backend. Check network/API.";
+      setSubmitMessage(msg);
     } finally {
       setSubmitting(false);
     }
@@ -330,6 +417,21 @@ export default function PlotRegistrationForm() {
                     <textarea className="form-control" rows={3} value={description} onChange={e => setDescription(e.target.value)} />
                   </div>
 
+                  <div className="row">
+                    <div className="col-md-4 mb-3">
+                      <label className="form-label">State</label>
+                      <input className="form-control" value={stateName} onChange={e => setStateName(e.target.value)} placeholder="e.g. Maharashtra" />
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <label className="form-label">City / District</label>
+                      <input className="form-control" value={cityName} onChange={e => setCityName(e.target.value)} placeholder="e.g. Pune" />
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <label className="form-label">Village</label>
+                      <input className="form-control" value={villageName} onChange={e => setVillageName(e.target.value)} placeholder="e.g. Hinjewadi" />
+                    </div>
+                  </div>
+
                   <div className="mb-3">
                     <label className="form-label">Area (optional)</label>
                     <input className="form-control" value={areaInput} onChange={e => setAreaInput(e.target.value)} placeholder="e.g. 1.25 ha or 12500 sq.m" />
@@ -344,10 +446,21 @@ export default function PlotRegistrationForm() {
                         <div className="small">Photo geo: {photoGeo ? `${photoGeo[0].toFixed(6)}, ${photoGeo[1].toFixed(6)}` : "not set"}</div>
                       </div>
                     )}
+                    {photoUploading && <div className="small text-muted mt-1">Uploading photo...</div>}
+                    {!photoUploading && photoUploadPath && !photoUploadError && (
+                      <div className="small text-success mt-1">Photo uploaded.</div>
+                    )}
+                    {photoUploadError && <div className="small text-danger mt-1">{photoUploadError}</div>}
                   </div>
 
                   <div className="d-flex gap-2">
-                    <button type="submit" className="btn btn-success" disabled={submitting}>{submitting ? "Saving..." : "Save Plot"}</button>
+                    <button
+                      type="submit"
+                      className="btn btn-success"
+                      disabled={submitting || photoUploading || (photoPreview && !photoUploadPath)}
+                    >
+                      {submitting ? "Saving..." : photoUploading ? "Uploading..." : "Save Plot"}
+                    </button>
                     <button type="button" className="btn btn-outline-secondary" onClick={clearAll}>Clear</button>
                   </div>
                   {submitMessage && <div className="mt-2 small text-success">{submitMessage}</div>}
@@ -464,7 +577,7 @@ export default function PlotRegistrationForm() {
               <div className="card-body">
                 <h6>Preview JSON</h6>
                 <pre style={{ maxHeight: 220, overflow: "auto", background: "#f8f9fa", padding: 10, borderRadius: 6, fontSize: 13 }}>
-{JSON.stringify({ plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, tempPoints, markers, photoGeo, photoFile: photoFile ? photoFile.name : null }, null, 2)}
+{JSON.stringify({ plotName, description, userProvidedArea: areaInput, calculatedAreaSqM, polygonCoordinates: coords, tempPoints, markers, photoGeo, photoFile: photoUploadPath, stateName, cityName, villageName }, null, 2)}
                 </pre>
               </div>
             </div>

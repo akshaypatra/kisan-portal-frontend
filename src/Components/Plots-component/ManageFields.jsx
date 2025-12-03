@@ -5,11 +5,11 @@ import {
   FaPlus,
   FaSave,
   FaTimes,
-  FaSeedling,
   FaMap,
   FaTruckLoading,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../../services/api";
 
 /**
  * ManageFields.jsx (earthy theme — avoids red)
@@ -19,12 +19,23 @@ import { useNavigate } from "react-router-dom";
  * - Crop badges use an earthy color palette
  */
 
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000/api/auth";
+const PLOTS_ENDPOINT = "/api/plots";
 const SQM_PER_ACRE = 4046.85642;
+
+const getCurrentUser = () => {
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
 
 export default function ManageFields() {
   const navigate = useNavigate();
-  const farmerId = Number(localStorage.getItem("farmer_id")) || 1;
+  const { plotId } = useParams();
+  const currentUser = getCurrentUser();
+  const farmerId = currentUser?.id;
 
   // ---------- SAMPLE DATA (wrapped in useMemo to keep stable reference) ----------
   const sampleFields = useMemo(
@@ -103,7 +114,16 @@ export default function ManageFields() {
   // Delete confirm
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null, name: "" });
   const [deleting, setDeleting] = useState(false);
-  const [harvestModal, setHarvestModal] = useState({ open: false, fieldId: null, cropIndex: null, qty: "", area: "", isFinal: false });
+  const [harvestModal, setHarvestModal] = useState({
+    open: false,
+    fieldId: null,
+    cropIndex: null,
+    qty: "",
+    area: "",
+    isFinal: false,
+    date: "",
+    finalYield: "",
+  });
   const [historyModal, setHistoryModal] = useState({ open: false, cropName: "", events: [] });
 
   // ---------- load plots from backend & merge with samples ----------
@@ -113,20 +133,30 @@ export default function ManageFields() {
   }, []);
 
   async function fetchRemotePlots() {
+    if (!farmerId) {
+      setFields((prev) => prev.filter((f) => !f.isRemote));
+      setAlert({ type: "warning", msg: "Log in to view your registered fields." });
+      setLoading(false);
+      setTimeout(() => setAlert(null), 3000);
+      return;
+    }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/with-cycles/${farmerId}`);
-      if (!res.ok) throw new Error("Failed to load plots");
-      const data = await res.json();
-      const mapped = data.map(mapPlotToField);
+      const { data } = await api.get(`${PLOTS_ENDPOINT}/with-cycles/${farmerId}`);
+      const mapped = Array.isArray(data) ? data.map(mapPlotToField) : [];
       setFields((prev) => {
         const locals = prev.filter((f) => !f.isRemote);
         return [...mapped, ...locals];
       });
-      setAlert({ type: "success", msg: "Synced plots from server." });
+      // setAlert({ type: "success", msg: "Synced plots from server." });
     } catch (err) {
       console.error(err);
-      setAlert({ type: "warning", msg: "Could not reach backend. Showing cached/demo fields." });
+      if (err?.response?.status === 404) {
+        setFields((prev) => prev.filter((f) => !f.isRemote));
+        setAlert({ type: "info", msg: "No plots found for your account yet." });
+      } else {
+        setAlert({ type: "warning", msg: "Could not reach backend. Showing cached/demo fields." });
+      }
     } finally {
       setLoading(false);
       setTimeout(() => setAlert(null), 3000);
@@ -134,29 +164,41 @@ export default function ManageFields() {
   }
 
   function mapPlotToField(plot) {
-    const area_acres = plot.calculated_area_sqm ? +(plot.calculated_area_sqm / SQM_PER_ACRE).toFixed(2) : 0;
+    const calculated = plot.calculated_area_sqm
+      ? +(plot.calculated_area_sqm / SQM_PER_ACRE).toFixed(2)
+      : 0;
+    const fallbackArea = Number(plot.user_provided_area) || 0;
+    const area_acres = calculated || fallbackArea;
     const stage = (plot.status && (plot.status.stage || plot.status.status)) || "Registered";
+    const cropCycles = Array.isArray(plot.crop_cycles) ? plot.crop_cycles : [];
     return {
       id: `db-${plot.id}`,
       dbId: plot.id,
+      routeKey: String(plot.id),
       name: plot.plot_name,
       area_acres,
       stage,
-      crops: (plot.cycles || [])
-        .filter((c) => c.status !== "Harvested")
+      crops: cropCycles
+        .filter((c) => c.status !== "harvested")
         .map((c, idx) => ({
           id: c.id,
           cycleId: c.id,
           name: c.crop_name,
           area_acres: c.area_acres,
           stage: c.status,
-          harvests: c.harvests || [],
+          sowing_date: c.sowing_date ? c.sowing_date.slice(0, 10) : "",
+          harvests: (c.harvest_events || []).map((event) => ({
+            id: event.id,
+            harvested_on: event.harvested_on,
+            harvested_qty: event.harvested_qty,
+            harvested_area_acres: event.harvested_area_acres,
+          })),
           harvested_qty_total: c.harvested_qty_total || 0,
           harvested_area_total: c.harvested_area_total || 0,
           fromApi: true,
           colorIndex: idx,
         })),
-      last_updated: plot.created_at ? plot.created_at.slice(0, 10) : "",
+      last_updated: plot.updated_at ? plot.updated_at.slice(0, 10) : "",
       isRemote: true,
     };
   }
@@ -166,14 +208,17 @@ export default function ManageFields() {
     if (field) {
       setEditField({
         ...field,
-        crops: field.crops && field.crops.length > 0 ? field.crops.map((c) => ({ ...c })) : [{ name: "", area_acres: "", stage: "Growing" }],
+        crops:
+          field.crops && field.crops.length > 0
+            ? field.crops.map((c) => ({ ...c }))
+            : [{ name: "", area_acres: "", stage: "Growing", sowing_date: "" }],
       });
     } else {
       setEditField({
         name: "",
         area_acres: "",
         stage: "Sowing",
-        crops: [{ name: "", area_acres: "", stage: "Growing" }],
+        crops: [{ name: "", area_acres: "", stage: "Growing", sowing_date: "" }],
       });
     }
     setEditing(true);
@@ -201,7 +246,10 @@ export default function ManageFields() {
   }
 
   function addCropRow() {
-    setEditField((prev) => ({ ...prev, crops: [...prev.crops, { name: "", area_acres: "", stage: "Growing" }] }));
+    setEditField((prev) => ({
+      ...prev,
+      crops: [...prev.crops, { name: "", area_acres: "", stage: "Growing", sowing_date: "" }],
+    }));
   }
 
   function removeCropRow(idx) {
@@ -217,8 +265,14 @@ export default function ManageFields() {
     if (!payload.area_acres || Number.isNaN(Number(payload.area_acres)) || Number(payload.area_acres) <= 0)
       return "Area (acres) must be a positive number.";
     if (!payload.crops || payload.crops.length === 0) return "Add at least one crop.";
-    const invalidCrop = payload.crops.find((c) => !c.name || Number.isNaN(Number(c.area_acres)) || Number(c.area_acres) <= 0);
-    if (invalidCrop) return "Each crop needs a name and positive area (acres).";
+    const invalidCrop = payload.crops.find(
+      (c) =>
+        !c.name ||
+        Number.isNaN(Number(c.area_acres)) ||
+        Number(c.area_acres) <= 0 ||
+        !c.sowing_date
+    );
+    if (invalidCrop) return "Each crop needs a name, sowing date, and positive area (acres).";
     return null;
   }
 
@@ -227,7 +281,14 @@ export default function ManageFields() {
     const payload = {
       ...editField,
       area_acres: Number(editField.area_acres),
-      crops: editField.crops.map((c) => ({ name: c.name, area_acres: Number(c.area_acres), stage: c.stage || "Growing", cycleId: c.cycleId, id: c.id })),
+      crops: editField.crops.map((c) => ({
+        name: c.name,
+        area_acres: Number(c.area_acres),
+        stage: (c.stage || "Growing").toString().toLowerCase(),
+        sowing_date: c.sowing_date,
+        cycleId: c.cycleId,
+        id: c.id,
+      })),
     };
 
     const validationError = validateFieldPayload(payload);
@@ -243,17 +304,21 @@ export default function ManageFields() {
         const newCrops = payload.crops.filter((c) => !c.cycleId && !c.id);
         const createdCrops = [];
         for (const c of newCrops) {
-          const res = await fetch(`${API_BASE}/cycle/create`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ plot_id: payload.dbId, crop_name: c.name, area_acres: c.area_acres, status: c.stage }),
+          const { data } = await api.post(`${PLOTS_ENDPOINT}/cycle/create`, {
+            plot_id: payload.dbId,
+            crop_name: c.name,
+            area_acres: c.area_acres,
+            sowing_date: c.sowing_date,
+            status: c.stage,
           });
-          if (!res.ok) throw new Error("Failed to create crop cycle");
-          const data = await res.json();
           createdCrops.push({
             ...c,
-            id: data.cycle_id,
-            cycleId: data.cycle_id,
+            id: data.id,
+            cycleId: data.id,
+            stage: data.status,
+            sowing_date: data.sowing_date ? data.sowing_date.slice(0, 10) : c.sowing_date,
+            harvested_qty_total: data.harvested_qty_total || 0,
+            harvested_area_total: data.harvested_area_total || 0,
             fromApi: true,
             harvests: [],
           });
@@ -309,10 +374,10 @@ export default function ManageFields() {
   }
 
   // UI helper
-  function harvestEventTemplate(qty, area) {
+  function harvestEventTemplate(qty, area, harvestedOn) {
     return {
       id: `local-${Date.now()}`,
-      harvested_on: new Date().toISOString(),
+      harvested_on: harvestedOn || new Date().toISOString(),
       harvested_qty: qty,
       harvested_area_acres: area,
     };
@@ -331,67 +396,122 @@ export default function ManageFields() {
       isFinal,
       maxArea: Math.max(0, (targetCrop.area_acres || 0) - (targetCrop.harvested_area_total || 0)),
       cropName: targetCrop.name,
+      date: new Date().toISOString().slice(0, 10),
+      finalYield: "",
     });
   }
 
   function closeHarvestModal() {
-    setHarvestModal({ open: false, fieldId: null, cropIndex: null, qty: "", area: "", isFinal: false, maxArea: 0, cropName: "" });
+    setHarvestModal({
+      open: false,
+      fieldId: null,
+      cropIndex: null,
+      qty: "",
+      area: "",
+      isFinal: false,
+      maxArea: 0,
+      cropName: "",
+      date: "",
+      finalYield: "",
+    });
   }
 
   async function submitHarvest() {
-    const { fieldId, cropIndex, qty, area, isFinal } = harvestModal;
+    const { fieldId, cropIndex, qty, area, isFinal, date, finalYield } = harvestModal;
     const targetField = fields.find((f) => f.id === fieldId);
     if (!targetField || !targetField.crops || !targetField.crops[cropIndex]) return;
     const targetCrop = targetField.crops[cropIndex];
 
+    const harvestDate = date || new Date().toISOString().slice(0, 10);
+    if (!harvestDate) {
+      setAlert({ type: "warning", msg: "Select a harvest date." });
+      setTimeout(() => setAlert(null), 2500);
+      return;
+    }
+
     const qtyNum = Number(qty);
-    if (Number.isNaN(qtyNum) || qtyNum <= 0) {
+    const finalYieldNum = isFinal ? Number(finalYield || qty) : null;
+
+    if (!isFinal && (Number.isNaN(qtyNum) || qtyNum <= 0)) {
       setAlert({ type: "warning", msg: "Provide a valid harvest quantity." });
       setTimeout(() => setAlert(null), 2500);
       return;
     }
 
+    if (isFinal && (Number.isNaN(finalYieldNum) || finalYieldNum <= 0)) {
+      setAlert({ type: "warning", msg: "Provide the final yield amount." });
+      setTimeout(() => setAlert(null), 2500);
+      return;
+    }
+
     const areaNum = area ? Number(area) : 0;
-    if (area && (Number.isNaN(areaNum) || areaNum < 0)) {
+    if (!isFinal && area && (Number.isNaN(areaNum) || areaNum < 0)) {
       setAlert({ type: "warning", msg: "Area must be a positive number." });
       setTimeout(() => setAlert(null), 2500);
       return;
     }
 
     const remainingArea = Math.max(0, (targetCrop.area_acres || 0) - (targetCrop.harvested_area_total || 0));
+    if (isFinal && remainingArea <= 0) {
+      setAlert({ type: "warning", msg: "This crop is already fully harvested." });
+      setTimeout(() => setAlert(null), 2500);
+      return;
+    }
+
     const effectiveArea = isFinal ? remainingArea || areaNum : (areaNum || remainingArea);
-    if (effectiveArea > (targetCrop.area_acres || 0) || effectiveArea > remainingArea + 1e-6) {
+    if (!effectiveArea || effectiveArea > (targetCrop.area_acres || 0) || effectiveArea > remainingArea + 1e-6) {
       setAlert({ type: "warning", msg: "Harvest area exceeds available crop area." });
       setTimeout(() => setAlert(null), 2500);
       return;
     }
 
-    const harvestEvent = harvestEventTemplate(qtyNum, effectiveArea || null);
+    let createdHarvest = null;
     try {
       if (targetField.isRemote && targetCrop.cycleId) {
-        const endpoint = isFinal ? "harvest/final" : "harvest/partial";
-        const payload = { cycle_id: targetCrop.cycleId, harvested_area_acres: effectiveArea || targetCrop.area_acres, harvested_qty: qtyNum, is_final: isFinal };
-        const res = await fetch(`${API_BASE}/${endpoint}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error("Failed to register harvest");
+        if (isFinal) {
+          await api.post(`${PLOTS_ENDPOINT}/harvest/final`, {
+            crop_cycle_id: targetCrop.cycleId,
+            harvested_on: harvestDate,
+            final_yield: finalYieldNum,
+            qr_url: null,
+            blockchain_tx: null,
+          });
+        } else {
+          const { data } = await api.post(`${PLOTS_ENDPOINT}/harvest/partial`, {
+            crop_cycle_id: targetCrop.cycleId,
+            harvested_on: harvestDate,
+            harvested_area_acres: effectiveArea || targetCrop.area_acres,
+            harvested_qty: qtyNum,
+            qr_url: null,
+            blockchain_tx: null,
+          });
+          createdHarvest = {
+            id: data.id,
+            harvested_on: data.harvested_on,
+            harvested_qty: data.harvested_qty,
+            harvested_area_acres: data.harvested_area_acres,
+          };
+        }
+      } else {
+        createdHarvest = harvestEventTemplate(isFinal ? finalYieldNum : qtyNum, effectiveArea || null, harvestDate);
       }
+
+      const quantityDelta = isFinal ? finalYieldNum : qtyNum;
       setFields((prev) =>
         prev.map((f) => {
           if (f.id !== fieldId) return f;
           const updatedCrops = f.crops
             .map((c, idx) => {
               if (idx !== cropIndex) return c;
-              const nextHarvests = [...(c.harvests || []), harvestEvent];
+              const nextHarvests =
+                createdHarvest && !isFinal ? [...(c.harvests || []), createdHarvest] : c.harvests || [];
               const newHarvestedArea = (c.harvested_area_total || 0) + (effectiveArea || 0);
               const fullyHarvested = isFinal || (effectiveArea && newHarvestedArea + 1e-6 >= (c.area_acres || 0));
               const status = fullyHarvested ? "Harvested" : "Partial harvest";
               return {
                 ...c,
                 harvests: nextHarvests,
-                harvested_qty_total: (c.harvested_qty_total || 0) + qtyNum,
+                harvested_qty_total: (c.harvested_qty_total || 0) + (quantityDelta || 0),
                 harvested_area_total: newHarvestedArea,
                 stage: status,
               };
@@ -404,7 +524,8 @@ export default function ManageFields() {
       closeHarvestModal();
     } catch (err) {
       console.error(err);
-      setAlert({ type: "warning", msg: "Could not register harvest." });
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || "Could not register harvest.";
+      setAlert({ type: "warning", msg });
     } finally {
       setTimeout(() => setAlert(null), 2500);
     }
@@ -417,6 +538,28 @@ export default function ManageFields() {
   function closeHistory() {
     setHistoryModal({ open: false, cropName: "", events: [] });
   }
+
+  const getRemainingArea = (field) => {
+    if (!field) return 0;
+    const declared =
+      Number(field.area_acres) ||
+      Number(field.user_provided_area) ||
+      Number(field.userProvidedArea) ||
+      0;
+    const used = (field.crops || []).reduce(
+      (sum, crop) => sum + (Number(crop.area_acres) || 0),
+      0
+    );
+    return Math.max(0, +(declared - used).toFixed(2));
+  };
+
+  const displayedFields = useMemo(() => {
+    if (!plotId) return fields;
+    return fields.filter((f) => {
+      const key = f.routeKey || (f.dbId ? String(f.dbId) : null) || (typeof f.id === "number" ? String(f.id) : `${f.id}`);
+      return key === plotId;
+    });
+  }, [fields, plotId]);
 
   // ---------- Render ----------
   return (
@@ -465,9 +608,6 @@ export default function ManageFields() {
             <FaPlus style={{ marginRight: 8 }} /> New Plot
           </button>
 
-          <button className="btn btn-success" onClick={() => openEditModal(null)}>
-            <FaSeedling style={{ marginRight: 8 }} /> Add Field
-          </button>
         </div>
       </div>
 
@@ -480,11 +620,11 @@ export default function ManageFields() {
       <div className="page-card mb-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <div>
-            <strong style={{ color: "#184723" }}>All fields</strong>
-            <div className="small-muted">Total: {fields.length}</div>
+            <strong style={{ color: "#184723" }}>{plotId ? "Selected field" : "All fields"}</strong>
+            <div className="small-muted">Total: {displayedFields.length}</div>
           </div>
           <div>
-            <button
+            {/* <button
               className="btn btn-outline-primary me-2"
               onClick={() => {
                 fetchRemotePlots();
@@ -492,22 +632,26 @@ export default function ManageFields() {
               disabled={loading}
             >
               {loading ? "Refreshing..." : "Sync server data"}
-            </button>
-            <button className="btn btn-outline-secondary" onClick={() => navigate("/dashboard")}>
+            </button> */}
+            {/* <button className="btn btn-outline-secondary" onClick={() => navigate("/dashboard")}>
               Back
-            </button>
+            </button> */}
           </div>
         </div>
 
         {/* Grid of cards (responsive) */}
         <div className="row g-3">
-          {fields.length === 0 && !loading && (
+          {displayedFields.length === 0 && !loading && (
             <div className="col-12">
               <div className="p-4 text-center text-muted">No fields yet. Click "Add Field" to create one.</div>
             </div>
           )}
 
-          {fields.map((f) => (
+          {displayedFields.map((f) => {
+            const remainingArea = getRemainingArea(f);
+            const fallbackId = typeof f.id === "string" ? f.id : String(f.id ?? "");
+            const routeTarget = f.routeKey || (f.dbId ? String(f.dbId) : fallbackId);
+            return (
             <div key={f.id} className="col-12 col-md-6 col-lg-4 d-flex">
               <div className="card field-row w-100">
                 <div className="card-body">
@@ -516,6 +660,9 @@ export default function ManageFields() {
                       <div style={{ fontWeight: 800, color: "#153d2b" }}>{f.name}</div>
                       <div className="small-muted">
                         {f.stage} | {f.area_acres} ac
+                      </div>
+                      <div className="small-muted">
+                        Unused area: <strong>{remainingArea}</strong> ac
                       </div>
                     </div>
 
@@ -569,7 +716,18 @@ export default function ManageFields() {
                   </div>
 
                   <div className="d-flex justify-content-end">
-                    <div>
+                    <div className="d-flex flex-wrap gap-2">
+                      <button
+                        className="btn btn-sm btn-outline-success action-btn"
+                        title={remainingArea > 0 ? "Plan crops for available land" : "No free area left"}
+                        disabled={remainingArea <= 0}
+                        onClick={() => {
+                          if (remainingArea <= 0) return;
+                          navigate(`/crop-planning/${routeTarget}`);
+                        }}
+                      >
+                        Crop plan
+                      </button>
                       <button
                         className="btn btn-sm btn-outline-primary me-2 action-btn"
                         title="Edit field"
@@ -590,7 +748,8 @@ export default function ManageFields() {
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       </div>
 
@@ -636,7 +795,7 @@ export default function ManageFields() {
                   </div>
 
                   <div className="col-12">
-                    <label className="form-label">Crops (name & area acres)</label>
+                    <label className="form-label">Crops (name, area, stage, sowing date)</label>
 
                     {editField.crops.map((c, i) => (
                       <div key={i} className="input-group mb-2">
@@ -657,6 +816,13 @@ export default function ManageFields() {
                           <option>Harvesting</option>
                           <option>Harvested</option>
                         </select>
+                        <input
+                          type="date"
+                          className="form-control"
+                          style={{ maxWidth: 160 }}
+                          value={c.sowing_date || ""}
+                          onChange={(e) => updateCrop(i, "sowing_date", e.target.value)}
+                        />
                         <button className="btn btn-outline-secondary" onClick={() => removeCropRow(i)} type="button">
                           <FaTimes />
                         </button>
@@ -726,14 +892,53 @@ export default function ManageFields() {
                   <input className="form-control" value={harvestModal.cropName} readOnly />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Quantity (kg)</label>
-                  <input className="form-control" type="number" min="0" value={harvestModal.qty} onChange={(e) => setHarvestModal((p) => ({ ...p, qty: e.target.value }))} />
+                  <label className="form-label">Harvest Date</label>
+                  <input
+                    className="form-control"
+                    type="date"
+                    value={harvestModal.date}
+                    onChange={(e) => setHarvestModal((p) => ({ ...p, date: e.target.value }))}
+                  />
                 </div>
-                <div className="mb-3">
-                  <label className="form-label">Area (acres){harvestModal.maxArea !== undefined ? ` (max ${harvestModal.maxArea})` : ""}</label>
-                  <input className="form-control" type="number" min="0" value={harvestModal.area} onChange={(e) => setHarvestModal((p) => ({ ...p, area: e.target.value }))} />
-                  <div className="small-muted mt-1">If blank, remaining area is used.</div>
-                </div>
+                {!harvestModal.isFinal && (
+                  <>
+                    <div className="mb-3">
+                      <label className="form-label">Quantity (quintals)</label>
+                      <input
+                        className="form-control"
+                        type="number"
+                        min="0"
+                        value={harvestModal.qty}
+                        onChange={(e) => setHarvestModal((p) => ({ ...p, qty: e.target.value }))}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">
+                        Area (acres){harvestModal.maxArea !== undefined ? ` (max ${harvestModal.maxArea})` : ""}
+                      </label>
+                      <input
+                        className="form-control"
+                        type="number"
+                        min="0"
+                        value={harvestModal.area}
+                        onChange={(e) => setHarvestModal((p) => ({ ...p, area: e.target.value }))}
+                      />
+                      <div className="small-muted mt-1">If blank, remaining area is used.</div>
+                    </div>
+                  </>
+                )}
+                {harvestModal.isFinal && (
+                  <div className="mb-3">
+                    <label className="form-label">Final Yield (quintals)</label>
+                    <input
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      value={harvestModal.finalYield}
+                      onChange={(e) => setHarvestModal((p) => ({ ...p, finalYield: e.target.value }))}
+                    />
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button className="btn btn-outline-secondary" onClick={closeHarvestModal}>Cancel</button>

@@ -55,7 +55,7 @@ const Navbar = () => {
             </li>
 
             <li className="nav-item">
-              <Link className="nav-link fs-5" to="/dashboard" onClick={closeMenu}>
+              <Link className="nav-link fs-5" to="/ai-advisory" onClick={closeMenu}>
                 AI Advisory
               </Link>
             </li>

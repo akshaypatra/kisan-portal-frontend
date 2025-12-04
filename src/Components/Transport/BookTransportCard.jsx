@@ -88,6 +88,7 @@ export default function BookTransportCard({ farmerId }) {
     drop_location: "",
     drop_lat: null,
     drop_lng: null,
+    storage_facility_id: null,
     shipping_date: "",
     shipping_time: "",
   });
@@ -212,7 +213,11 @@ export default function BookTransportCard({ farmerId }) {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+      ...(name === "drop_location" ? { storage_facility_id: null } : {}),
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -237,6 +242,7 @@ export default function BookTransportCard({ farmerId }) {
         drop_location: form.drop_location,
         drop_lat: form.drop_lat,
         drop_lng: form.drop_lng,
+        storage_facility_id: form.storage_facility_id,
         pickup_lat: selectedPlot?.map_center?.lat || userLocation.lat,
         pickup_lng: selectedPlot?.map_center?.lng || userLocation.lng,
         shipping_date: form.shipping_date,
@@ -407,6 +413,7 @@ export default function BookTransportCard({ farmerId }) {
                           drop_location: `${s.name}, ${s.city}, ${s.state}`,
                           drop_lat: s.latitude,
                           drop_lng: s.longitude,
+                          storage_facility_id: s.id,
                         }))
                       }
                     >

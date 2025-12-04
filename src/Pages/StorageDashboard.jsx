@@ -9,6 +9,7 @@ import StorageAlertCenter from "../Components/Storage-components/StorageAlertCen
 import StorageTaskPanel from "../Components/Storage-components/StorageTaskPanel";
 import StorageInsights from "../Components/Storage-components/StorageInsights";
 import StorageFacilityForm from "../Components/Storage-components/StorageFacilityForm";
+import StorageIntakeCard from "../Components/Storage-components/StorageIntakeCard";
 
 function StorageDashboardView() {
   const user = authService.getStoredUser();
@@ -73,6 +74,15 @@ function StorageDashboardView() {
       <StorageSummaryCards />
 
       <div className="row g-4 mb-4">
+        <div className="col-lg-6">
+          <StorageIntakeCard />
+        </div>
+        <div className="col-lg-6">
+          <StorageAlertCenter />
+        </div>
+      </div>
+
+      <div className="row g-4 mb-4">
         <div className="col-lg-7">
           <FacilityPerformanceTable />
         </div>
@@ -82,11 +92,8 @@ function StorageDashboardView() {
       </div>
 
       <div className="row g-4 mb-4">
-        <div className="col-lg-7">
+        <div className="col-12">
           <StorageInventoryBoard />
-        </div>
-        <div className="col-lg-5">
-          <StorageAlertCenter />
         </div>
       </div>
 

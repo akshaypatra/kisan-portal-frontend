@@ -9,6 +9,12 @@ const driverService = {
     api.post(`/api/transport/driver/bookings/${bookingId}/start`, null, {
       params: { contact_number, password },
     }),
+  completeTrip: (bookingId, contact_number, password, lat, lng) =>
+    api.post(
+      `/api/transport/driver/bookings/${bookingId}/complete`,
+      { lat, lng },
+      { params: { contact_number, password } }
+    ),
 };
 
 export default driverService;

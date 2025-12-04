@@ -7,6 +7,7 @@ const transportService = {
   listBookings: () => api.get('/api/transport/bookings'),
   acceptBooking: (bookingId, vehicleId) =>
     api.post(`/api/transport/bookings/${bookingId}/accept`, null, { params: vehicleId ? { vehicle_id: vehicleId } : {} }),
+  markPaid: (bookingId) => api.post(`/api/transport/bookings/${bookingId}/pay`),
 };
 
 export default transportService;

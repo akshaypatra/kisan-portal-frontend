@@ -16,6 +16,7 @@ export default function FarmerRequestsPanel() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [payingId, setPayingId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -34,6 +35,21 @@ export default function FarmerRequestsPanel() {
   useEffect(() => {
     load();
   }, []);
+
+  const payForBooking = async (bookingId) => {
+    setPayingId(bookingId);
+    setError("");
+    try {
+      const { data } = await transportService.markPaid(bookingId);
+      setRequests((prev) => prev.map((r) => (r.id === bookingId ? data : r)));
+    } catch (err) {
+      console.error(err);
+      const msg = err?.response?.data?.detail || "Could not mark payment";
+      setError(msg);
+    } finally {
+      setPayingId(null);
+    }
+  };
 
   return (
     <div className="card shadow-sm border-0 rounded-4">
@@ -54,6 +70,7 @@ export default function FarmerRequestsPanel() {
                 <th>Drop</th>
                 <th>Ship</th>
                 <th>Status</th>
+                <th>Payment</th>
               </tr>
             </thead>
             <tbody>
@@ -78,6 +95,21 @@ export default function FarmerRequestsPanel() {
                   </td>
                   <td>
                     <StatusBadge status={r.status} />
+                  </td>
+                  <td>
+                    {r.payment_status === "paid" ? (
+                      <span className="badge bg-success text-white">Paid</span>
+                    ) : (r.intake_status === "arrived" || r.intake_status === "stored" || r.arrival_verified) ? (
+                      <button
+                        className="btn btn-sm btn-outline-success"
+                        disabled={payingId === r.id}
+                        onClick={() => payForBooking(r.id)}
+                      >
+                        {payingId === r.id ? "Paying..." : "Pay for storage"}
+                      </button>
+                    ) : (
+                      <span className="badge bg-light text-dark">Wait for arrival</span>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -40,6 +40,7 @@ export default function DriverDashboard() {
   const [qrInput, setQrInput] = useState("");
   const [scanBookingId, setScanBookingId] = useState(null);
   const [scanError, setScanError] = useState("");
+  const [completingId, setCompletingId] = useState(null);
   const toNum = (val) => {
     const n = Number(val);
     return Number.isFinite(n) ? n : null;
@@ -92,6 +93,29 @@ export default function DriverDashboard() {
     } catch (err) {
       console.error(err);
       setError("Could not start trip.");
+    }
+  };
+
+  const completeTrip = async (bookingId) => {
+    setCompletingId(bookingId);
+    setError("");
+    const getPosition = () =>
+      new Promise((resolve, reject) => {
+        if (!navigator.geolocation) return reject(new Error("Geolocation not available"));
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 8000 });
+      });
+    try {
+      const pos = await getPosition();
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      await driverService.completeTrip(bookingId, driverAuth.contact_number, driverAuth.password, lat, lng);
+      loadSchedule();
+    } catch (err) {
+      console.error(err);
+      const msg = err?.response?.data?.detail || err?.message || "Could not complete trip.";
+      setError(msg);
+    } finally {
+      setCompletingId(null);
     }
   };
 
@@ -212,6 +236,17 @@ export default function DriverDashboard() {
                       </button>
                     </div>
                     {scanError && scanBookingId === item.id && <div className="text-danger small">{scanError}</div>}
+                  </div>
+                )}
+                {item.status === "in_transit" && (
+                  <div className="mt-2">
+                    <button
+                      className="btn btn-sm btn-success"
+                      disabled={completingId === item.id}
+                      onClick={() => completeTrip(item.id)}
+                    >
+                      {completingId === item.id ? "Completing..." : "Complete Trip (within 500m)"}
+                    </button>
                   </div>
                 )}
               </div>

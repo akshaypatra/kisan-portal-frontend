@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './Components/Navbar';
 import './App.css';
-import HomePage from './Pages/Farmers/HomePage';
+import HomePage from './Pages/Home/HomePage';
 import LoginPage from './Pages/LoginPage';
 import SignupPage from './Pages/SignupPage';
 import PlotRegistration from './Components/Plots-component/PlotRegistration';

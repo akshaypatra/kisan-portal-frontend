@@ -7,6 +7,8 @@ import exifr from "exifr";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import api, { plotsAPI } from "../../services/api";
+import CONFIG from "../../config";
+import { Autocomplete, useJsApiLoader } from "@react-google-maps/api";
 
 // Fix icon paths for many bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -17,6 +19,8 @@ L.Icon.Default.mergeOptions({
 });
 
 const PLOTS_ENDPOINT = "/api/plots";
+const GOOGLE_MAPS_KEY = CONFIG.GOOGLE_MAPS_API_KEY;
+const GOOGLE_LIBRARIES = ["places"];
 
 export default function PlotRegistrationForm() {
   // form state
@@ -37,12 +41,20 @@ export default function PlotRegistrationForm() {
   const [photoUploadError, setPhotoUploadError] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchError, setSearchError] = useState("");
+  const autocompleteRef = useRef(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   // point-by-point mode state
   const [pointMode, setPointMode] = useState(false);
   const [tempPoints, setTempPoints] = useState([]); // points being plotted in pointMode
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const { isLoaded: mapsReady } = useJsApiLoader({
+    id: "plot-registration-map",
+    googleMapsApiKey: GOOGLE_MAPS_KEY,
+    libraries: GOOGLE_LIBRARIES,
+  });
 
   // refs
   const mapRef = useRef(null);
@@ -170,26 +182,73 @@ export default function PlotRegistrationForm() {
     }
   }
 
-  // SEARCH (Nominatim)
-  async function handleSearch() {
-    if (!searchQuery) return;
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`;
-      const res = await fetch(url, { headers: { "Accept-Language": "en" } });
-      const results = await res.json();
-      if (results && results.length > 0) {
-        const r = results[0];
-        const lat = parseFloat(r.lat);
-        const lon = parseFloat(r.lon);
-        const map = mapRef.current;
-        if (map) map.setView([lat, lon], 16);
-        setMarkers(prev => [...prev, [lat, lon]]);
+  function applyAddress(address) {
+    if (!address) return;
+    setStateName(address.state || address.state_district || "");
+    setCityName(address.city || address.town || address.district || address.county || "");
+    setVillageName(address.village || address.suburb || address.hamlet || address.locality || "");
+  }
+
+  function centerOnLocation(loc) {
+    const lat = loc.lat;
+    const lon = loc.lng || loc.lon;
+    const map = mapRef.current;
+    if (map && Number.isFinite(lat) && Number.isFinite(lon)) {
+      // fly the Leaflet map to the selected place with a focused zoom
+      if (typeof map.flyTo === "function") {
+        map.flyTo([lat, lon], 17, { duration: 0.6 });
       } else {
-        alert("No results found");
+        map.setView([lat, lon], 17);
       }
+    }
+    // replace marker stack with the selected location marker
+    setMarkers([[lat, lon]]);
+    applyAddress(loc.address || {});
+    setSelectedLocation({ lat, lon, address: loc.address || {} });
+  }
+
+  // fly/zoom once both map and selectedLocation are available (handles cases where autocomplete fires before map ref is set)
+  useEffect(() => {
+    if (!selectedLocation) return;
+    const { lat, lon } = selectedLocation;
+    const map = mapRef.current;
+    if (map && Number.isFinite(lat) && Number.isFinite(lon)) {
+      if (typeof map.flyTo === "function") {
+        map.flyTo([lat, lon], 17, { duration: 0.6 });
+      } else {
+        map.setView([lat, lon], 17);
+      }
+    }
+  }, [selectedLocation]);
+
+  function handlePlaceChanged() {
+    setSearchError("");
+    try {
+      const place = autocompleteRef.current?.getPlace?.();
+      if (!place || !place.geometry || !place.geometry.location) {
+        setSearchError("No location found for that search.");
+        return;
+      }
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      const addr = place.address_components || [];
+      const address = {
+        state: addr.find((c) => c.types.includes("administrative_area_level_1"))?.long_name,
+        city:
+          addr.find((c) => c.types.includes("locality"))?.long_name ||
+          addr.find((c) => c.types.includes("administrative_area_level_2"))?.long_name ||
+          addr.find((c) => c.types.includes("sublocality"))?.long_name,
+        village:
+          addr.find((c) => c.types.includes("sublocality"))?.long_name ||
+          addr.find((c) => c.types.includes("neighborhood"))?.long_name ||
+          addr.find((c) => c.types.includes("locality"))?.long_name,
+      };
+      const label = place.formatted_address || place.name || searchQuery;
+      setSearchQuery(label);
+      centerOnLocation({ lat, lon: lng, address });
     } catch (err) {
       console.error(err);
-      alert("Search failed — check network");
+      setSearchError("Google place lookup failed.");
     }
   }
 
@@ -498,9 +557,35 @@ export default function PlotRegistrationForm() {
             <div className="card shadow-sm mb-3">
               <div className="card-body">
                 <div className="d-flex mb-2">
-                  <input className="form-control me-2" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search location" />
-                  <button className="btn btn-warning me-2" onClick={handleSearch}>Search</button>
-                  <button className="btn btn-outline-secondary" onClick={() => setSearchQuery("")}>Reset</button>
+                  <div className="flex-grow-1 position-relative">
+                    {mapsReady ? (
+                      <Autocomplete
+                        onLoad={(ac) => {
+                          autocompleteRef.current = ac;
+                        }}
+                        onPlaceChanged={handlePlaceChanged}
+                      >
+                        <input
+                          className="form-control"
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          placeholder="Search location (Google Places)"
+                        />
+                      </Autocomplete>
+                    ) : (
+                      <input
+                        className="form-control"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        placeholder="Loading Google Maps..."
+                        disabled
+                      />
+                    )}
+                    {searchError && <div className="small text-danger mt-1">{searchError}</div>}
+                  </div>
+                  <button className="btn btn-outline-secondary ms-2" onClick={() => { setSearchQuery(""); setSearchError(""); }}>
+                    Clear
+                  </button>
                 </div>
 
                 <div style={{ marginBottom: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>

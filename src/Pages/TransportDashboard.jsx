@@ -3,11 +3,14 @@ import { TransportProvider, useTransport } from "../Components/Transport/Transpo
 import VehicleRegistrationForm from "../Components/Transport/VehicleRegistrationForm";
 import VehicleList from "../Components/Transport/VehicleList";
 import TransportRequestsBoard from "../Components/Transport/TransportRequestsBoard";
+import TransportBookingScanner from "../Components/Transport/TransportBookingScanner";
+import AIAdvisoryBanner from "../Components/Common/AIAdvisoryBanner";
 
 function TransportDashboardView() {
   const { vehicles } = useTransport();
   return (
     <div className="container py-4">
+      <AIAdvisoryBanner />
       <style>
         {`
           .transport-hero {
@@ -42,6 +45,11 @@ function TransportDashboardView() {
         </div>
         <div className="col-lg-7">
           <VehicleList />
+        </div>
+      </div>
+      <div className="row g-4 mt-1">
+        <div className="col-12 col-lg-6">
+          <TransportBookingScanner />
         </div>
       </div>
       <TransportRequestsBoard vehicles={vehicles} />

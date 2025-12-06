@@ -5,6 +5,7 @@ const storageService = {
   createFacility: (payload) => api.post('/api/storage/facilities', payload),
   intakeLookup: (payload) => api.post('/api/transport/storage/intake/lookup', payload),
   intakeReceive: (payload) => api.post('/api/transport/storage/intake/receive', payload),
+  incomingLoads: () => api.get('/api/transport/storage/incoming'),
 };
 
 export default storageService;

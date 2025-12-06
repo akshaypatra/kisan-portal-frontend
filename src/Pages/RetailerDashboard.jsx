@@ -1,11 +1,13 @@
 import React from 'react';
 import authService from '../services/authService';
+import AIAdvisoryBanner from '../Components/Common/AIAdvisoryBanner';
 
 const RetailerDashboard = () => {
   const user = authService.getStoredUser();
 
   return (
     <div className="container mt-4">
+      <AIAdvisoryBanner />
       {/* Header with Kisan Portal gradient styling */}
       <div
         style={{

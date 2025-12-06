@@ -10,12 +10,15 @@ import StorageTaskPanel from "../Components/Storage-components/StorageTaskPanel"
 import StorageInsights from "../Components/Storage-components/StorageInsights";
 import StorageFacilityForm from "../Components/Storage-components/StorageFacilityForm";
 import StorageIntakeCard from "../Components/Storage-components/StorageIntakeCard";
+import StorageIncomingBoard from "../Components/Storage-components/StorageIncomingBoard";
+import AIAdvisoryBanner from "../Components/Common/AIAdvisoryBanner";
 
 function StorageDashboardView() {
   const user = authService.getStoredUser();
 
   return (
     <div className="storage-dashboard container py-4">
+      <AIAdvisoryBanner />
       <style>
         {`
         .storage-dashboard {
@@ -78,7 +81,7 @@ function StorageDashboardView() {
           <StorageIntakeCard />
         </div>
         <div className="col-lg-6">
-          <StorageAlertCenter />
+          <StorageIncomingBoard />
         </div>
       </div>
 

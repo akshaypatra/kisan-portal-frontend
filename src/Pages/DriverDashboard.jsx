@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import driverService from "../services/driverService";
 import { Scanner } from "@yudiel/react-qr-scanner";
+import QRCode from "react-qr-code";
+import AIAdvisoryBanner from "../Components/Common/AIAdvisoryBanner";
 
 function QRScannerModal({ onClose, onDetected }) {
   const [hasDecoded, setHasDecoded] = useState(false);
@@ -41,6 +43,7 @@ export default function DriverDashboard() {
   const [scanBookingId, setScanBookingId] = useState(null);
   const [scanError, setScanError] = useState("");
   const [completingId, setCompletingId] = useState(null);
+  const [showQrId, setShowQrId] = useState(null);
   const toNum = (val) => {
     const n = Number(val);
     return Number.isFinite(n) ? n : null;
@@ -161,6 +164,7 @@ export default function DriverDashboard() {
 
   return (
     <div className="container py-4">
+      <AIAdvisoryBanner />
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div>
           <h4 className="mb-0">Driver Dashboard</h4>
@@ -247,6 +251,18 @@ export default function DriverDashboard() {
                     >
                       {completingId === item.id ? "Completing..." : "Complete Trip (within 500m)"}
                     </button>
+                    <button
+                      className="btn btn-sm btn-outline-dark ms-2"
+                      onClick={() => setShowQrId(showQrId === item.id ? null : item.id)}
+                    >
+                      {showQrId === item.id ? "Hide QR" : "Show QR for storage scan"}
+                    </button>
+                  </div>
+                )}
+                {showQrId === item.id && (
+                  <div className="mt-2 p-2 border rounded-3 bg-light">
+                    <div className="small text-muted mb-1">Scan at storage to mark offloaded</div>
+                    <QRCode value={JSON.stringify({ booking_id: item.id, vehicle_number: item.vehicle_number })} size={140} />
                   </div>
                 )}
               </div>

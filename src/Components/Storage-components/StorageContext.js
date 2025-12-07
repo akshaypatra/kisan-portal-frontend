@@ -197,6 +197,16 @@ const ownerLabels = {
   company_center: "Company Center",
 };
 
+function calcBookingQty(booking) {
+  if (booking?.intake_qty !== undefined && booking.intake_qty !== null) {
+    return Number(booking.intake_qty) || 0;
+  }
+  if (Array.isArray(booking?.goods_details) && booking.goods_details.length) {
+    return booking.goods_details.reduce((sum, g) => sum + (Number(g.quantity) || 0), 0);
+  }
+  return Number(booking?.quantity || 0);
+}
+
 function normalizeFacilityPayload(facility) {
   if (!facility) return null;
   return {
@@ -206,7 +216,8 @@ function normalizeFacilityPayload(facility) {
     owner_type_label: ownerLabels[facility.owner_type] || facility.owner_type,
     location: facility.city && facility.state ? `${facility.city}, ${facility.state}` : facility.city || facility.state || "",
     capacity_t: Number(facility.capacity_t || 0),
-    available_t: Number(facility.capacity_t || 0),
+    used_t: Number(facility.used_t || 0),
+    available_t: Number(facility.available_t !== undefined ? facility.available_t : facility.capacity_t || 0),
     commodities: [],
     services: facility.storage_type === "cold" ? ["Cold Storage"] : ["Warehouse"],
     utilizationTrend: fallbackTrend,
@@ -237,21 +248,30 @@ function StorageProvider({ children }) {
 
   const fetchFacilities = async () => {
     if (!localStorage.getItem("accessToken")) {
+      console.log("No access token, using demo facilities");
       setFacilities(initialFacilities);
       return;
     }
     setLoadingFacilities(true);
     setFacilityError(null);
     try {
+      console.log("Fetching facilities from backend...");
       const { data } = await storageService.listFacilities();
+      console.log("Received facilities from backend:", data);
+
       if (Array.isArray(data) && data.length) {
-        setFacilities(data.map(normalizeFacilityPayload));
+        const normalized = data.map(normalizeFacilityPayload);
+        console.log("Normalized facilities:", normalized);
+        setFacilities(normalized);
       } else {
+        console.log("No facilities returned, setting empty array");
         setFacilities([]);
       }
     } catch (err) {
       console.error("Failed to load facilities", err);
       setFacilityError("Unable to load facilities");
+      // Don't fallback to demo data on error - show empty
+      setFacilities([]);
     } finally {
       setLoadingFacilities(false);
     }
@@ -346,6 +366,41 @@ function StorageProvider({ children }) {
       fetchFacilities,
       loadingFacilities,
       facilityError,
+      applyIntakeUpdate: (booking) => {
+        if (!booking) return;
+        const qty = calcBookingQty(booking);
+        setFacilities((prev) =>
+          prev.map((f) => {
+            if (String(f.id) !== String(booking.storage_facility_id || booking.storage_facility?.id)) return f;
+            const available = Number.isFinite(f.available_t) ? Number(f.available_t) : Number(f.capacity_t || 0);
+            const nextAvail = available - qty;
+            return { ...f, available_t: nextAvail >= 0 ? nextAvail : 0 };
+          })
+        );
+        setLots((prev) => {
+          const exists = prev.find((l) => String(l.id) === String(booking.id));
+          if (exists) return prev;
+          const goodsText =
+            Array.isArray(booking.goods_details) && booking.goods_details.length
+              ? booking.goods_details.map((g) => `${g.name || "Crop"} (${g.quantity || 0})`).join(", ")
+              : `${booking.crop_name || "Crop"} (${qty})`;
+          return [
+            {
+              id: booking.id,
+              crop: booking.crop_name || goodsText,
+              quantity_t: qty,
+              facilityId: booking.storage_facility_id || booking.storage_facility?.id || "",
+              facilityName: booking.storage_facility?.name || "Facility",
+              status: booking.intake_status || "Stored",
+              intakeDate: booking.shipping_date || "",
+              dispatchEta: "",
+              owner: booking.farmer_name || "Farmer",
+              qualityGrade: "A",
+            },
+            ...prev,
+          ];
+        });
+      },
     }),
     [facilities, requests, lots, alerts, tasks, summary]
   );

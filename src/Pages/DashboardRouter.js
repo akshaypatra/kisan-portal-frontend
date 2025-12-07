@@ -29,10 +29,14 @@ const DashboardRouter = () => {
       case 'trader':
         navigate('/trader-dashboard');
         break;
+      case 'transport':
+        navigate('/transport-dashboard');
+        break;
       case 'storage':
         navigate('/storage-dashboard');
         break;
       case 'manufacturer':
+        // console.log("wtf u doing");
         navigate('/manufacturer-dashboard');
         break;
       case 'retailer':

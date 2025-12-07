@@ -10,6 +10,7 @@ import { seedAPI, plotsAPI } from '../../services/api';
 import CONFIG from '../../config';
 import Select from 'react-select';
 import { Scanner } from '@yudiel/react-qr-scanner';
+import AIAdvisoryBanner from '../../Components/Common/AIAdvisoryBanner';
 // import { QrReader } from 'react-qr-reader';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Tooltip, Legend);
@@ -869,6 +870,7 @@ export default function SeedSellerDashboard() {
 
   return (
     <div className="container my-4">
+      <AIAdvisoryBanner />
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div>
           <h3 className="mb-0 text-gradient" style={{background:'linear-gradient(90deg,#6a11cb,#2575fc)', WebkitBackgroundClip:'text', color:'transparent'}}>Seed Seller Dashboard</h3>

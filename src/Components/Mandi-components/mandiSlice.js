@@ -1,4 +1,4 @@
-// src/features/mandi/mandiSlice.js
+
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 /**
@@ -21,7 +21,7 @@ function buildUrl({
   apiKey = DEFAULT_API_KEY,
   format = "json",
   offset = 0,
-  limit = 10,
+  limit = 8000,
   filters = {},
 }) {
   const params = new URLSearchParams();

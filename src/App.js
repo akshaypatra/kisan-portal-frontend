@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './Components/Navbar';
 import './App.css';
-import HomePage from './Pages/Farmers/HomePage';
+import HomePage from './Pages/Home/HomePage';
 import LoginPage from './Pages/LoginPage';
 import SignupPage from './Pages/SignupPage';
 import PlotRegistration from './Components/Plots-component/PlotRegistration';
@@ -33,6 +33,7 @@ import TransportDashboard from './Pages/TransportDashboard';
 import BookTransportPage from './Pages/Farmers/BookTransportPage';
 import DriverLoginPage from './Pages/DriverLoginPage';
 import DriverDashboard from './Pages/DriverDashboard';
+import AIAdvisoryPage from './Pages/AI-Advisory/AIAdvisoryPage';
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/login-redirect" element={<DashboardRouter />} />
+            <Route path='/ai-advisory' element={<AIAdvisoryPage/>}/>
 
             {/* Existing Dashboards */}
             <Route path="/dashboard" element={<Dashboard />} />

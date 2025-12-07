@@ -24,7 +24,7 @@ const Navbar = () => {
       <div className="navbar-container" >
 
         <Link className="navbar-brand fs-3 fw-bold" to="/"  onClick={closeMenu}>
-          BeejNex
+          <img  src='/ICONS/logo-wbg.png' style={{height:"30px"}} alt="home icon" width={30} />BeejNex
         </Link>
 
         <button
@@ -55,7 +55,7 @@ const Navbar = () => {
             </li>
 
             <li className="nav-item">
-              <Link className="nav-link fs-5" to="/dashboard" onClick={closeMenu}>
+              <Link className="nav-link fs-5" to="/ai-advisory" onClick={closeMenu}>
                 AI Advisory
               </Link>
             </li>

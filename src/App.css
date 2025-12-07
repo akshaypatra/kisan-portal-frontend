@@ -67,3 +67,17 @@
     padding:20px;
     border-radius: 30px;
 }
+
+/* AI -advisory */
+
+.AI-advisory-page-container{
+    padding: 10vh;
+}
+
+@media (max-width: 768px) {
+    .AI-advisory-page-container{
+    padding: 1vh;
+}
+
+
+}

@@ -30,6 +30,8 @@ import RetailerDashboard from './Pages/RetailerDashboard';
 import PolicyMakerDashboard from './Pages/PolicyMakerDashboard';
 import CropPlanning from './Pages/Farmers/CropPlanning';
 import AIAdvisoryPage from './Pages/AI-Advisory/AIAdvisoryPage';
+import FavorableCrops from './Components/AI-advisory-Components/FavorableCrops';
+import PlanCropsAdvisory from './Components/AI-advisory-Components/PlanCropsAdvisory';
 
 function App() {
   return (
@@ -73,6 +75,8 @@ function App() {
             <Route path="/sell-crops" element={<SellCropsPage/>} />
             <Route path="/buy-crops" element={<FarmersListingPage/>}/>
             <Route path="/crop-planning/:plotId" element={<CropPlanning />} />
+            <Route path='/advisory/crop-recommendation' element={<FavorableCrops/>}/>
+            <Route path='/advisory/plan-crops' element={<PlanCropsAdvisory/>}/>
           </Routes>
         </section>
 

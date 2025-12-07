@@ -25,7 +25,7 @@ import DashboardRouter from './Pages/DashboardRouter';
 import FPODashboard from './Pages/FPODashboard';
 import TraderDashboard from './Pages/TraderDashboard';
 import StorageDashboard from './Pages/StorageDashboard';
-import ManufacturerDashboard from './Pages/ManufacturerDashboard';
+import ManufacturerDashboard from './Pages/ManufacturingDashboard';
 import RetailerDashboard from './Pages/RetailerDashboard';
 import PolicyMakerDashboard from './Pages/PolicyMakerDashboard';
 import CropPlanning from './Pages/Farmers/CropPlanning';

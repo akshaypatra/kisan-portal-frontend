@@ -36,6 +36,7 @@ const DashboardRouter = () => {
         navigate('/storage-dashboard');
         break;
       case 'manufacturer':
+        // console.log("wtf u doing");
         navigate('/manufacturer-dashboard');
         break;
       case 'retailer':

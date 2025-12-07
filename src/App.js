@@ -75,6 +75,8 @@ function App() {
             <Route path="/crop-planning/:plotId" element={<CropPlanning />} />
           </Routes>
         </section>
+
+        
       </div>
     </Router>
   );

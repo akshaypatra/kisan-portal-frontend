@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import authService from "../services/authService";
+import TranslateButton from "./TranslateButton";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -115,11 +116,10 @@ const Navbar = () => {
 
             {/* Google Translate - as a proper nav item, right aligned */}
             <li className="nav-item ms-lg-3 mt-2 mt-lg-0">
-              <div
-                id="google_translate_element"
-                className="google-translate-container d-flex justify-content-center justify-content-lg-end"
-              />
-            </li>
+  <TranslateButton />
+</li>
+
+
           </ul>
         </div>
       </div>

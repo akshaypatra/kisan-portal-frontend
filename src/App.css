@@ -12,6 +12,18 @@
     padding-right: 100px;  
 }
 
+#google_translate_element {
+  display: none !important;
+}
+
+/* Hide Google Toolbar */
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+}
+body {
+  top: 0 !important;
+}
+
 
 
 @media (max-width: 768px) {

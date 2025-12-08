@@ -45,9 +45,9 @@ const DayPill = ({ day, iconComponent, hi, lo }) => (
 );
 
 export const defaultData = {
-  location: 'Pune, IN',
+  location: 'Rourkela, IN',
   condition: 'Clear Sky',
-  temp: 19,
+  temp: 18,
   wind: '0 m/s',
   precip: '0 mm/hr',
   pressure: '1018 mb',

@@ -32,6 +32,7 @@ import CropPlanning from './Pages/Farmers/CropPlanning';
 import AIAdvisoryPage from './Pages/AI-Advisory/AIAdvisoryPage';
 import FavorableCrops from './Components/AI-advisory-Components/FavorableCrops';
 import PlanCropsAdvisory from './Components/AI-advisory-Components/PlanCropsAdvisory';
+import OilSeedAdvisory from './Components/AI-advisory-Components/OilSeedAdvisory';
 
 function App() {
   return (
@@ -77,6 +78,7 @@ function App() {
             <Route path="/crop-planning/:plotId" element={<CropPlanning />} />
             <Route path='/advisory/crop-recommendation' element={<FavorableCrops/>}/>
             <Route path='/advisory/plan-crops' element={<PlanCropsAdvisory/>}/>
+            <Route path='/advisory/plan-oil-seeds' element={<OilSeedAdvisory/>}/>
           </Routes>
         </section>
 

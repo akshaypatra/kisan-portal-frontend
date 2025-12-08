@@ -22,7 +22,7 @@ const PlanCropsAdvisory = () => {
   const [selectedPlot, setSelectedPlot] = useState(null);
 
   // 1 = choose plot, 2 = fill form, 3 = pick crops,
-  // 4 = view plans, 5 = final JSON
+  // 4 = view plans, 5 = final status
   const [step, setStep] = useState(1);
 
   // Form state
@@ -52,8 +52,13 @@ const PlanCropsAdvisory = () => {
   const [plansError, setPlansError] = useState("");
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(null);
 
-  // Final JSON for primary + secondary crop plan
+  // Final JSON for primary + secondary crop plan (kept for internal use)
   const [finalCropPlanJson, setFinalCropPlanJson] = useState(null);
+
+  // Saving / final status
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // ------------------- fetch plots -------------------
   useEffect(() => {
@@ -114,6 +119,9 @@ const PlanCropsAdvisory = () => {
     setRecommendedPlans([]);
     setSelectedPlanIndex(null);
     setFinalCropPlanJson(null);
+    setSaveLoading(false);
+    setSaveError("");
+    setSaveSuccess(false);
     setStep(2);
   };
 
@@ -230,13 +238,13 @@ const PlanCropsAdvisory = () => {
     }
   };
 
-  // ------------------- Step 4: plan -> final JSON -------------------
-  const handleConfirmPlan = () => {
+  // ------------------- Step 4: plan -> save to backend -------------------
+  const handleConfirmPlan = async () => {
     if (selectedPlanIndex === null) {
       alert("Please choose one plan.");
       return;
     }
-    if (!selectedPlot || !primaryCrop || !secondaryCrop) {
+    if (!selectedPlot || !primaryCrop) {
       alert("Missing data. Please go back and re-select.");
       return;
     }
@@ -265,8 +273,37 @@ const PlanCropsAdvisory = () => {
       secondary_crop: secondaryJson,
     };
 
+    // store final JSON locally for reference
     setFinalCropPlanJson(combined);
-    setStep(5);
+
+    // send to backend
+    setSaveError("");
+    setSaveLoading(true);
+    setSaveSuccess(false);
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/plots/crop-plan/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(combined),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`Save failed. Status ${res.status}. ${txt}`);
+      }
+
+      // success
+      setSaveSuccess(true);
+      setStep(5);
+    } catch (err) {
+      console.error(err);
+      setSaveError(err.message || "Failed to save crop plan.");
+      // still move to step 5 so user can see error and retry/start over
+      setStep(5);
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
   const handleStartOver = () => {
@@ -283,6 +320,9 @@ const PlanCropsAdvisory = () => {
     setNpk({ n: "", p: "", k: "" });
     setIrrigationLevel("");
     setPlotDetails("");
+    setSaveLoading(false);
+    setSaveError("");
+    setSaveSuccess(false);
     setStep(1);
   };
 
@@ -336,7 +376,7 @@ const PlanCropsAdvisory = () => {
             Smart Crop Advisory
           </h2>
           <p className="text-muted mb-3">
-            Flow: select plot → fill details → pick crops → plans → final JSON.
+            Flow: select plot → fill details → pick crops → plans → finalize.
           </p>
 
           <div className="d-flex justify-content-center gap-3 flex-wrap">
@@ -366,7 +406,7 @@ const PlanCropsAdvisory = () => {
             />
             <StepPill
               step={5}
-              label="Final JSON"
+              label="Finalize"
               active={step === 5}
               icon={<FaTractor />}
             />
@@ -421,9 +461,13 @@ const PlanCropsAdvisory = () => {
           />
         )}
 
-        {step === 5 && finalCropPlanJson && (
-          <StepFinalJSON
+        {step === 5 && (
+          <StepFinalStatus
             finalJson={finalCropPlanJson}
+            saveLoading={saveLoading}
+            saveError={saveError}
+            saveSuccess={saveSuccess}
+            selectedPlot={selectedPlot}
             onStartOver={handleStartOver}
           />
         )}
@@ -911,7 +955,7 @@ const StepRecommendedPlans = ({
                             </div>
 
                             <div className="mt-2">
-                              <span className={`badge ${demand.cls} rounded-pill`}>Demand : {demand.txt}</span>
+                              <span className={`badge ${demand.cls} rounded-pill`}>Demand :{demand.txt}</span>
                             </div>
                           </div>
                         </div>
@@ -1002,7 +1046,7 @@ const StepRecommendedPlans = ({
             <div className="d-flex justify-content-between mt-3">
               <button className="btn btn-outline-secondary" onClick={onBack}>Back</button>
               <button className="btn btn-success" onClick={onConfirmPlan} disabled={selectedPlanIndex === null}>
-                Confirm and View Final JSON <FaArrowRight className="ms-2" />
+                Confirm and Save Plan <FaArrowRight className="ms-2" />
               </button>
             </div>
           </>
@@ -1012,37 +1056,76 @@ const StepRecommendedPlans = ({
   );
 };
 
+/* ---------- STEP 5: FINAL STATUS (saving result + redirect) ---------- */
+const StepFinalStatus = ({ finalJson, saveLoading, saveError, saveSuccess, selectedPlot, onStartOver }) => {
+  return (
+    <div className="card shadow-sm border-0">
+      <div className="card-header bg-success bg-gradient text-white d-flex align-items-center">
+        <FaTractor className="me-2" />
+        <div>
+          <div className="fw-semibold">Final: save crop plan</div>
+          <small>Save status and next steps.</small>
+        </div>
+      </div>
 
-/* ---------- STEP 5: FINAL JSON (primary + secondary crop objects) ---------- */
-const StepFinalJSON = ({ finalJson, onStartOver }) => (
-  <div className="card shadow-sm border-0">
-    <div className="card-header bg-success bg-gradient text-white d-flex align-items-center">
-      <FaTractor className="me-2" />
-      <div>
-        <div className="fw-semibold">Step 5: Final crop plan JSON</div>
-        <small>One object for primary and one for secondary crop (ready to POST).</small>
+      <div className="card-body">
+        {saveLoading && (
+          <div className="text-center py-4">
+            <div className="spinner-border text-success mb-3" role="status" />
+            <div className="fw-semibold">Saving crop plan…</div>
+            <div className="text-muted small mt-2">Please wait</div>
+          </div>
+        )}
+
+        {!saveLoading && saveError && (
+          <div className="alert alert-danger">
+            <div className="fw-semibold">Failed to save plan</div>
+            <div className="small">{saveError}</div>
+            <div className="mt-3 d-flex gap-2">
+              <button className="btn btn-outline-secondary btn-sm" onClick={onStartOver}>Start over</button>
+            </div>
+          </div>
+        )}
+
+        {!saveLoading && saveSuccess && (
+          <div className="text-center py-4">
+            <div className="mb-3">
+              <div className="h4 text-success fw-bold">Crops successfully added to the Plot</div>
+            </div>
+
+            <p className="text-muted small mb-3">You can manage the plot fields now.</p>
+
+            <div className="d-flex justify-content-center gap-2">
+              <button
+                className="btn btn-primary fw-semibold"
+                onClick={() => {
+                  // redirect to manage fields for this plot
+                  const pid = selectedPlot?.id ?? "";
+                  window.location.href = `/manage-fields/${pid}`;
+                }}
+              >
+                Go to Manage Fields
+              </button>
+
+              <button
+                className="btn btn-outline-success"
+                onClick={onStartOver}
+              >
+                Do another plot
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!saveLoading && !saveSuccess && !saveError && (
+          <div className="text-center py-3 text-muted small">
+            Click Confirm on the previous screen to save the plan.
+          </div>
+        )}
       </div>
     </div>
-    <div className="card-body">
-      <pre
-        className="small bg-dark text-success p-3 rounded"
-        style={{
-          maxHeight: "340px",
-          overflowY: "auto",
-          fontSize: "0.78rem",
-        }}
-      >
-        {JSON.stringify(finalJson, null, 2)}
-      </pre>
-    </div>
-    <div className="card-footer d-flex justify-content-between align-items-center bg-light">
-      <span className="small text-muted">You can now send these two crop objects to your backend.</span>
-      <button type="button" className="btn btn-outline-success btn-sm" onClick={onStartOver}>
-        Start again
-      </button>
-    </div>
-  </div>
-);
+  );
+};
 
 /* ---------- Shared helpers ---------- */
 const StepPill = ({ step, label, active, icon }) => (

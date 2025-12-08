@@ -31,7 +31,6 @@ import {
 } from "recharts";
 import QRCode from "react-qr-code";
 import api from "../../services/api";
-import AIAdvisoryBanner from "../../Components/Common/AIAdvisoryBanner";
 
 /**
  * Dashboard:
@@ -330,7 +329,6 @@ export default function Dashboard() {
   // ---------- RENDER ----------
   return (
     <div className="dashboard-container p-3">
-      <AIAdvisoryBanner />
       <div className="dashboard-weather-widget-container mb-3">
         <WeatherWidget />
       </div>

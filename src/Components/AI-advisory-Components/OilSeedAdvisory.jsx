@@ -288,60 +288,65 @@ const OilSeedAdvisory = () => {
 
   // ------------------- Step 4: save selected oilseed to backend -------------------
   const handleConfirmPlan = async () => {
-    if (!selectedPlot || !primaryCrop) {
-      alert("Missing data. Please go back and re-select.");
-      return;
-    }
+  if (!selectedPlot || !primaryCrop) {
+    alert("Missing data. Please go back and re-select.");
+    return;
+  }
 
-    const today = new Date().toISOString().slice(0, 10);
-    const area = selectedPlot.user_provided_area ?? 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const area = selectedPlot.user_provided_area ?? 0;
 
-    const cropPayload = {
-      plot_id: selectedPlot.id,
-      crop_name: primaryCrop.crop_name,
-      crop_type: primaryCrop.crop_type,
-      area_acres: area,
-      sowing_date: today,
-      status: "growing",
-      recommended_breed: primaryCrop.recommended_breed,
-      projected_yield_per_acre: primaryCrop.projected_yield_per_acre,
-      projected_yield_for_plot: primaryCrop.projected_yield_for_plot,
-      price_mandi_estimate: primaryCrop.price_mandi_estimate,
-      demand: primaryCrop.demand,
-    };
-
-    setFinalCropPlanJson(cropPayload);
-
-    setSaveError("");
-    setSaveLoading(true);
-    setSaveSuccess(false);
-
-    try {
-      const res = await fetch(
-        "http://127.0.0.1:8000/api/plots/crop-plan/save",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(cropPayload),
-        }
-      );
-
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(`Save failed. Status ${res.status}. ${txt}`);
-      }
-
-      // success
-      setSaveSuccess(true);
-      setStep(5);
-    } catch (err) {
-      console.error(err);
-      setSaveError(err.message || "Failed to save crop plan.");
-      setStep(5);
-    } finally {
-      setSaveLoading(false);
-    }
+  // minimal payload fields that the backend definitely knows
+  const primaryCropForBackend = {
+    plot_id: selectedPlot.id,
+    crop_name: primaryCrop.crop_name,
+    area_acres: area,
+    sowing_date: today,
+    status: "growing",
+ 
   };
+
+  // match the original /crop-plan/save contract
+  const payloadToSave = {
+    primary_crop: primaryCropForBackend,
+    secondary_crop: null, // or omit if serializer has required=False
+  };
+
+  setFinalCropPlanJson(payloadToSave); // keep for UI reference
+  setSaveError("");
+  setSaveLoading(true);
+  setSaveSuccess(false);
+
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/plots/crop-plan/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payloadToSave),
+    });
+
+    if (!res.ok) {
+      let details = "";
+      try {
+        const errJson = await res.json();
+        details = JSON.stringify(errJson);
+      } catch {
+        const txt = await res.text().catch(() => "");
+        details = txt;
+      }
+      throw new Error(`Save failed. Status ${res.status}. ${details}`);
+    }
+
+    setSaveSuccess(true);
+    setStep(5);
+  } catch (err) {
+    console.error("Save crop plan error:", err);
+    setSaveError(err.message || "Failed to save crop plan.");
+    setStep(5);
+  } finally {
+    setSaveLoading(false);
+  }
+};
+
 
   const handleStartOver = () => {
     setSelectedPlot(null);

@@ -34,6 +34,8 @@ import BookTransportPage from './Pages/Farmers/BookTransportPage';
 import DriverLoginPage from './Pages/DriverLoginPage';
 import DriverDashboard from './Pages/DriverDashboard';
 import AIAdvisoryPage from './Pages/AI-Advisory/AIAdvisoryPage';
+import FavorableCrops from './Components/AI-advisory-Components/FavorableCrops';
+import PlanCropsAdvisory from './Components/AI-advisory-Components/PlanCropsAdvisory';
 
 function App() {
   return (
@@ -81,8 +83,12 @@ function App() {
             <Route path="/sell-crops" element={<SellCropsPage/>} />
             <Route path="/buy-crops" element={<FarmersListingPage/>}/>
             <Route path="/crop-planning/:plotId" element={<CropPlanning />} />
+            <Route path='/advisory/crop-recommendation' element={<FavorableCrops/>}/>
+            <Route path='/advisory/plan-crops' element={<PlanCropsAdvisory/>}/>
           </Routes>
         </section>
+
+        
       </div>
     </Router>
   );

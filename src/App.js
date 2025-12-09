@@ -36,8 +36,10 @@ import DriverDashboard from './Pages/DriverDashboard';
 import AIAdvisoryPage from './Pages/AI-Advisory/AIAdvisoryPage';
 import FavorableCrops from './Components/AI-advisory-Components/FavorableCrops';
 import PlanCropsAdvisory from './Components/AI-advisory-Components/PlanCropsAdvisory';
+import OilSeedAdvisory from './Components/AI-advisory-Components/OilSeedAdvisory';
 import NewBookTransportPage from './Pages/Farmers/NewBookTransportPage';
 import PalmOilClusterPlanner from './Pages/PalmOilClusterPlanner';
+import BuyCropsPage from './Pages/Vendors/BuyCropsPage';
 
 function App() {
   return (

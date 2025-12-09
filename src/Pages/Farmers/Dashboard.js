@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 //eslint-disable-next-line no-unused-vars
 import WeatherWidget from "../../Components/Weather-component/WeatherWidget";
+import AIVoiceAssistant from "../../Components/AI-Assistant/AIVoiceAssistant";
 import { useNavigate } from "react-router-dom";
 import {
   FaSeedling,
@@ -325,6 +326,11 @@ export default function Dashboard() {
   // ---------- RENDER ----------
   return (
     <div className="dashboard-container p-3">
+      <AIVoiceAssistant />
+
+      <div className="dashboard-weather-widget-container mb-3">
+        <WeatherWidget />
+      </div>
 
       <div className="dashboard-button-container mb-3">
         <style>

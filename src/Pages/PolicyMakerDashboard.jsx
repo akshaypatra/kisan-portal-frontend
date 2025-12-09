@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSeedling, FaMapMarkedAlt, FaRobot, FaChartLine } from 'react-icons/fa';
 import authService from '../services/authService';

@@ -90,7 +90,7 @@ export default function Dashboard() {
     {
       name: "Book Transport",
       icon: <FaTruck size={32} />,
-      path: "/book-transport",
+      path: "/new-book-transport",
       color: "#10b981",
     },
   ];

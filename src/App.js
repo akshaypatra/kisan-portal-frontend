@@ -36,6 +36,7 @@ import DriverDashboard from './Pages/DriverDashboard';
 import AIAdvisoryPage from './Pages/AI-Advisory/AIAdvisoryPage';
 import FavorableCrops from './Components/AI-advisory-Components/FavorableCrops';
 import PlanCropsAdvisory from './Components/AI-advisory-Components/PlanCropsAdvisory';
+import NewBookTransportPage from './Pages/Farmers/NewBookTransportPage';
 
 function App() {
   return (
@@ -66,6 +67,7 @@ function App() {
             {/* Other Routes */}
             <Route path="/plot-registration" element={<PlotRegistration />} />
             <Route path="/book-transport" element={<BookTransportPage />} />
+            <Route path="/new-book-transport" element={<NewBookTransportPage />} />
             <Route path="/driver-login" element={<DriverLoginPage />} />
             <Route path="/driver-dashboard" element={<DriverDashboard />} />
             <Route path="/mandi-prices"

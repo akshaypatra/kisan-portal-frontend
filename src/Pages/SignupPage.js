@@ -34,25 +34,53 @@ export default function SignupPage() {
     { value: 'company_center', label: 'Company Collection Center' },
   ];
 
+  // 🔍 VALIDATIONS
   const validate = () => {
-    const { name, mobile, password, role } = credentials;
+    const { name, mobile, password, role, storageOwnerType } = credentials;
 
-    if (!name.trim() || !mobile.trim() || !password.trim() || !role) {
+    const trimmedName = name.trim();
+    const trimmedMobile = mobile.trim();
+
+    // Basic empty check
+    if (!trimmedName || !trimmedMobile || !password.trim() || !role) {
       alert('कृपया सभी फील्ड भरें / Please fill all fields');
       return false;
     }
 
-    if (mobile.length < 6) {
-      alert('कृपया वैध मोबाइल नंबर दर्ज करें / Please enter a valid mobile number');
+    // 1️⃣ Name: only letters + spaces
+    if (!/^[A-Za-z\s]+$/.test(trimmedName)) {
+      alert(
+        'नाम में केवल अक्षर और स्पेस होने चाहिए / Name should contain only letters and spaces'
+      );
       return false;
     }
 
-    if (password.length < 6) {
-      alert('पासवर्ड कम से कम 6 वर्ण का होना चाहिए / Password must be at least 6 characters');
+    // 2️⃣ Mobile: digits only, exactly 10 digits
+    if (!/^\d{10}$/.test(trimmedMobile)) {
+      alert(
+        'मोबाइल नंबर 10 अंकों का होना चाहिए और केवल अंक होने चाहिए / Mobile number must be 10 digits and contain digits only'
+      );
       return false;
     }
 
-    if (role === 'storage' && !credentials.storageOwnerType) {
+    // 3️⃣ Password: at least 8 chars + at least 1 special character
+    if (password.length < 8) {
+      alert(
+        'पासवर्ड कम से कम 8 वर्ण का होना चाहिए / Password must be at least 8 characters'
+      );
+      return false;
+    }
+
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+    if (!hasSpecialChar) {
+      alert(
+        'पासवर्ड में कम से कम 1 विशेष चिन्ह होना चाहिए / Password must contain at least one special character'
+      );
+      return false;
+    }
+
+    // Storage owner type required if role is storage
+    if (role === 'storage' && !storageOwnerType) {
       alert('Please select the storage owner type');
       return false;
     }
@@ -66,8 +94,8 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const payload = {
-        name: credentials.name,
-        mobile: credentials.mobile,
+        name: credentials.name.trim(),
+        mobile: credentials.mobile.trim(),
         password: credentials.password,
         role: credentials.role,
       };
@@ -76,18 +104,13 @@ export default function SignupPage() {
         payload.storage_owner_type = credentials.storageOwnerType;
       }
 
-      // Call backend register API
       const data = await authService.register(payload);
 
-      // Backend returns { token, user }
       if (data.token && data.user) {
-        // Store token and user data
         localStorage.setItem('accessToken', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
         alert('रजिस्ट्रेशन सफल / Registration successful');
-
-        // Auto-login: redirect to dashboard router
         navigate('/login-redirect');
       } else {
         alert('रजिस्ट्रेशन असफल हुआ – कृपया पुन: प्रयास करें');
@@ -144,6 +167,7 @@ export default function SignupPage() {
                       Sign Up
                     </button>
                   </div>
+
                   {/* Role Selection */}
                   <div className="mb-3">
                     <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
@@ -173,7 +197,10 @@ export default function SignupPage() {
                         className="form-select border-success"
                         value={credentials.storageOwnerType}
                         onChange={(e) =>
-                          setCredentials({ ...credentials, storageOwnerType: e.target.value })
+                          setCredentials({
+                            ...credentials,
+                            storageOwnerType: e.target.value,
+                          })
                         }
                       >
                         {ownerTypeOptions.map((option) => (
@@ -184,6 +211,7 @@ export default function SignupPage() {
                       </select>
                     </div>
                   )}
+
                   {/* Name */}
                   <div className="mb-3">
                     <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
@@ -194,9 +222,13 @@ export default function SignupPage() {
                       className="form-control border-success"
                       placeholder="Enter your name"
                       value={credentials.name}
-                      onChange={(e) =>
-                        setCredentials({ ...credentials, name: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // allow only letters and spaces
+                        if (/^[A-Za-z\s]*$/.test(value)) {
+                          setCredentials({ ...credentials, name: value });
+                        }
+                      }}
                       onKeyDown={onKeyDown}
                     />
                   </div>
@@ -211,9 +243,14 @@ export default function SignupPage() {
                       className="form-control border-success"
                       placeholder="Enter mobile number"
                       value={credentials.mobile}
-                      onChange={(e) =>
-                        setCredentials({ ...credentials, mobile: e.target.value })
-                      }
+                      maxLength={10}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // allow only digits
+                        if (/^\d*$/.test(value)) {
+                          setCredentials({ ...credentials, mobile: value });
+                        }
+                      }}
                       onKeyDown={onKeyDown}
                     />
                   </div>
@@ -233,9 +270,11 @@ export default function SignupPage() {
                       }
                       onKeyDown={onKeyDown}
                     />
+                    <small className="text-muted">
+                      कम से कम 8 वर्ण और 1 विशेष चिन्ह आवश्यक /
+                      Minimum 8 characters and 1 special character required
+                    </small>
                   </div>
-
-                  
 
                   <button
                     onClick={handleSignup}
@@ -280,7 +319,7 @@ export default function SignupPage() {
                     <p className="mb-1">
                       सहायता चाहिए? संपर्क करें:{' '}
                       <a href="#!" className="text-decoration-none">
-                        kisan-portal@example.com
+                        help@beejnex.com
                       </a>
                     </p>
                     <p className="mb-0">Version: 1.0</p>

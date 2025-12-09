@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
+//eslint-disable-next-line no-unused-vars
 import WeatherWidget from "../../Components/Weather-component/WeatherWidget";
 import { useNavigate } from "react-router-dom";
 import {
   FaSeedling,
+  //eslint-disable-next-line no-unused-vars
   FaNewspaper,
   FaStore,
   FaChartLine,
@@ -63,9 +65,9 @@ export default function Dashboard() {
 
   const buttons = [
     {
-      name: "Mandi Prices",
+      name: "AI Advisory",
       icon: <FaChartLine size={32} />,
-      path: "/mandi-prices",
+      path: "/ai-advisory",
       color: "#4CAF50",
     },
     {
@@ -73,12 +75,6 @@ export default function Dashboard() {
       icon: <FaStore size={32} />,
       path: "/market",
       color: "#2196F3",
-    },
-    {
-      name: "News",
-      icon: <FaNewspaper size={32} />,
-      path: "/news",
-      color: "#FF9800",
     },
     {
       name: "Sell Crops",
@@ -329,9 +325,6 @@ export default function Dashboard() {
   // ---------- RENDER ----------
   return (
     <div className="dashboard-container p-3">
-      <div className="dashboard-weather-widget-container mb-3">
-        <WeatherWidget />
-      </div>
 
       <div className="dashboard-button-container mb-3">
         <style>
@@ -433,9 +426,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="dashboard-weather-widget-container mb-3">
+      {/* <div className="dashboard-weather-widget-container mb-3">
         <WeatherWidget />
-      </div>
+      </div> */}
 
       {/* ---------- OVERALL ANALYTICS ---------- */}
       <div className="analytics-section">

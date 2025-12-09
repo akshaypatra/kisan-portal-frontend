@@ -4,8 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { FaRupeeSign, FaChartLine, FaInfoCircle } from "react-icons/fa";
 
 const API_BASE = "http://127.0.0.1:8000/api/crop-listing";
-const ADVISORY_URL =
-  "http://127.0.0.1:8000/api/advisory/oilseed/advisory";
+const ADVISORY_URL = "http://127.0.0.1:8000/api/advisory/oilseed/advisory";
 
 // Oilseed options for dropdown
 const OILSEED_CROPS = [
@@ -18,7 +17,6 @@ const OILSEED_CROPS = [
   "Niger Seed",
   "Castor",
   "Linseed",
-  "Coconut (Copra)",
   "Oil Palm",
 ];
 
@@ -28,12 +26,11 @@ const SellCropsPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     cropName: "",
-    quantity: "",
+    quantityKg: "",   // quantity in KG (baseline 100kg = 1 quintal)
     pickupDate: "",
     pickupTime: "",
     location: "",
     demandedPrice: "",
-    photo: null,
   });
 
   const [myListings, setMyListings] = useState([]);
@@ -157,12 +154,8 @@ const SellCropsPage = () => {
   }, [farmerId]);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === "photo") {
-      setFormData((prev) => ({ ...prev, photo: files[0] || null }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Helper: derive region from typed location (use text before first comma)
@@ -172,21 +165,41 @@ const SellCropsPage = () => {
     return parts[0] || regionFromUserLocation || "";
   };
 
+  // ---- Date/time helpers (no past date/time) ----
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  const minPickupTime = useMemo(() => {
+    if (!formData.pickupDate) return "";
+    if (formData.pickupDate !== todayStr) return "";
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }, [formData.pickupDate, todayStr]);
+
   // ---- ADVISORY: Predict estimated price ----
   const handlePredictAdvisory = async () => {
     setAdvisoryError("");
     setAdvisoryData(null);
 
-    if (!formData.cropName || !formData.quantity) {
-      setAdvisoryError("कृपया पिकाचे नाव आणि एकूण क्विंटल भरा.");
+    if (!formData.cropName || !formData.quantityKg) {
+      setAdvisoryError("कृपया पिकाचे नाव आणि एकूण वजन (किलो) भरा.");
       return;
     }
 
-    const quantityQtl = parseFloat(formData.quantity) || 0;
-    if (quantityQtl <= 0) {
-      setAdvisoryError("क्विंटल प्रमाण 0 पेक्षा जास्त असावे.");
+    const qtyKg = parseFloat(formData.quantityKg) || 0;
+    if (qtyKg <= 0) {
+      setAdvisoryError("प्रमाण (किलो) 0 पेक्षा जास्त असावे.");
       return;
     }
+
+    const quantityQtl = qtyKg / 100; // convert KG → Quintal
 
     const payload = {
       crop: formData.cropName,
@@ -228,6 +241,41 @@ const SellCropsPage = () => {
       return;
     }
 
+    // ---- Validate no past date/time ----
+    if (formData.pickupDate) {
+      try {
+        const [y, m, d] = formData.pickupDate.split("-").map(Number);
+        const selectedDate = new Date(y, m - 1, d);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDate < today) {
+          setError("Pickup date cannot be in the past.");
+          return;
+        }
+
+        if (formData.pickupTime) {
+          const [hh, mm] = formData.pickupTime.split(":").map(Number);
+          const selectedDateTime = new Date(y, m - 1, d, hh, mm);
+          const now = new Date();
+          if (selectedDateTime < now) {
+            setError("Pickup time cannot be in the past.");
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Invalid date/time", err);
+        setError("Please enter a valid pickup date and time.");
+        return;
+      }
+    }
+
+    const qtyKg = parseFloat(formData.quantityKg) || 0;
+    if (qtyKg <= 0) {
+      setError("Quantity in kg must be greater than 0.");
+      return;
+    }
+    const quantityQtl = qtyKg / 100; // convert KG → Quintal
+
     setSubmitting(true);
 
     try {
@@ -239,9 +287,8 @@ const SellCropsPage = () => {
         region: getRegionFromLocation(formData.location),
         crop_name: formData.cropName,
         crop_grade: "A Grade", // default
-        crop_quantity: parseFloat(formData.quantity) || 0, // quintals
+        crop_quantity: quantityQtl, // backend expects quintals
         demanded_price: parseFloat(formData.demandedPrice) || 0, // ₹/qtl
-        // you can optionally store advisoryData.recommended_selling_price_per_quintal as msp_price/ai_price later
         msp_price: advisoryData?.msp_per_quintal || null,
       };
 
@@ -260,12 +307,11 @@ const SellCropsPage = () => {
 
       setFormData({
         cropName: "",
-        quantity: "",
+        quantityKg: "",
         pickupDate: "",
         pickupTime: "",
         location: currentUser?.location || "",
         demandedPrice: "",
-        photo: null,
       });
       setAdvisoryData(null);
       setShowForm(false);
@@ -311,14 +357,11 @@ const SellCropsPage = () => {
         status: editForm.status || undefined,
       };
 
-      const res = await fetch(
-        `${API_BASE}/listings/${editingListingId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`${API_BASE}/listings/${editingListingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (!res.ok) throw new Error("Failed to update listing");
 
@@ -345,12 +388,9 @@ const SellCropsPage = () => {
     setError("");
 
     try {
-      const res = await fetch(
-        `${API_BASE}/listings/${listingId}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const res = await fetch(`${API_BASE}/listings/${listingId}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error("Failed to delete listing");
       setMyListings((prev) => prev.filter((l) => l.id !== listingId));
       setOffersByListing((prev) => {
@@ -372,9 +412,7 @@ const SellCropsPage = () => {
     setError("");
 
     try {
-      const res = await fetch(
-        `${API_BASE}/listings/${listingId}/offers`
-      );
+      const res = await fetch(`${API_BASE}/listings/${listingId}/offers`);
       if (!res.ok) throw new Error("Failed to load offers for this listing");
       const data = await res.json();
       setOffersByListing((prev) => ({
@@ -417,9 +455,7 @@ const SellCropsPage = () => {
         };
       });
 
-      const listingRes = await fetch(
-        `${API_BASE}/listings/${listingId}`
-      );
+      const listingRes = await fetch(`${API_BASE}/listings/${listingId}`);
       if (listingRes.ok) {
         const updatedListing = await listingRes.json();
         setMyListings((prev) =>
@@ -477,8 +513,8 @@ const SellCropsPage = () => {
             <strong>Welcome, {farmerName}</strong>
           </p>
           <p className="text-muted mb-2 fs-6">
-            List your oilseed crops in quintals, get an AI-based price
-            suggestion, and manage offers and deals in one place.
+            List your oilseed crops, get an AI-based price suggestion, and
+            manage offers and deals in one place.
           </p>
           <p className="text-muted small mb-3">
             <strong>Your location:</strong>{" "}
@@ -529,7 +565,7 @@ const SellCropsPage = () => {
               {!showForm && (
                 <p className="text-muted mb-0">
                   Click <strong>New Listing</strong> to add oilseed crop details
-                  like quantity in quintals, expected price and pickup time.
+                  like quantity, expected price and pickup time.
                 </p>
               )}
 
@@ -559,9 +595,7 @@ const SellCropsPage = () => {
 
                       <div className="row g-2 mb-2">
                         <div className="col-6">
-                          <div className="small text-muted">
-                            MSP (₹/qtl)
-                          </div>
+                          <div className="small text-muted">MSP (₹/qtl)</div>
                           <div className="fw-semibold d-flex align-items-center gap-1">
                             <FaRupeeSign />
                             {advisoryData.msp_per_quintal}
@@ -591,7 +625,10 @@ const SellCropsPage = () => {
                           </div>
                           <div className="fw-semibold d-flex align-items-center gap-1 text-success">
                             <FaRupeeSign />
-                            {advisoryData.recommended_selling_price_per_quintal}
+                            {
+                              advisoryData
+                                .recommended_selling_price_per_quintal
+                            }
                           </div>
                           <div className="small text-muted">
                             Recommended Total: ₹
@@ -670,27 +707,29 @@ const SellCropsPage = () => {
                       </select>
                     </div>
 
-                    {/* Quantity in quintals */}
+                    {/* Quantity in KG (baseline 100kg = 1 qtl) */}
                     <div className="mb-3">
                       <label className="form-label fw-semibold">
-                        Quantity (in <u>quintals</u>)
+                        Quantity (in <u>kilograms</u>)
                       </label>
                       <input
                         type="number"
                         min="0"
-                        step="0.1"
+                        step="1"
                         className="form-control"
-                        name="quantity"
-                        value={formData.quantity}
+                        name="quantityKg"
+                        value={formData.quantityKg}
                         onChange={(e) => {
                           setAdvisoryData(null);
                           handleChange(e);
                         }}
-                        placeholder="e.g., 10 (for 10 quintals)"
+                        placeholder="e.g., 100 (for 1 quintal)"
                         required
                       />
                       <div className="form-text">
-                        1 quintal = 100 kg. Enter total quintals available.
+                        Baseline: <strong>100 kg = 1 quintal</strong>. We will
+                        automatically convert this into quintals for
+                        calculations and listing.
                       </div>
                     </div>
 
@@ -739,6 +778,7 @@ const SellCropsPage = () => {
                         name="pickupDate"
                         value={formData.pickupDate}
                         onChange={handleChange}
+                        min={todayStr}
                       />
                     </div>
 
@@ -752,6 +792,7 @@ const SellCropsPage = () => {
                         name="pickupTime"
                         value={formData.pickupTime}
                         onChange={handleChange}
+                        min={minPickupTime || undefined}
                       />
                       <div className="form-text">
                         This helps buyers plan logistics. (Not saved in backend
@@ -778,23 +819,6 @@ const SellCropsPage = () => {
                       <div className="form-text">
                         Pre-filled from your profile:{" "}
                         <strong>{currentUser.location || "not set"}</strong>
-                      </div>
-                    </div>
-
-                    {/* Photo (optional, future use) */}
-                    <div className="mb-3">
-                      <label className="form-label fw-semibold">
-                        Crop Photo
-                      </label>
-                      <input
-                        type="file"
-                        className="form-control"
-                        name="photo"
-                        accept="image/*"
-                        onChange={handleChange}
-                      />
-                      <div className="form-text">
-                        A clear photo builds trust. (Optional for now.)
                       </div>
                     </div>
 
@@ -1116,7 +1140,9 @@ const SellCropsPage = () => {
                     >
                       <div>
                         <div className="fw-semibold">
-                          {listing ? listing.crop_name : "Listing #" + deal.listing_id}
+                          {listing
+                            ? listing.crop_name
+                            : "Listing #" + deal.listing_id}
                         </div>
                         <div className="text-muted">
                           {listing && (

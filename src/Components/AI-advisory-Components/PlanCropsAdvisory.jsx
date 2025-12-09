@@ -282,11 +282,14 @@ const PlanCropsAdvisory = () => {
     setSaveSuccess(false);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/plots/crop-plan/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(combined),
-      });
+      const res = await fetch(
+        "http://127.0.0.1:8000/api/plots/crop-plan/save",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(combined),
+        }
+      );
 
       if (!res.ok) {
         const txt = await res.text().catch(() => "");
@@ -482,7 +485,9 @@ const StepSelectPlot = ({ plots, onSelectPlot }) => (
     <div className="card-header bg-success text-white d-flex align-items-center">
       <FaMapMarkedAlt className="me-2" />
       <div>
-        <div className="fw-semibold">Step 1: Select a plot for crop advisory</div>
+        <div className="fw-semibold">
+          Step 1: Select a plot for crop advisory
+        </div>
         <small className="d-block">
           Tap on your plot card to move to the next step.
         </small>
@@ -490,7 +495,9 @@ const StepSelectPlot = ({ plots, onSelectPlot }) => (
     </div>
     <div className="card-body p-3">
       {plots.length === 0 && (
-        <div className="text-center text-muted">No plots found for this user.</div>
+        <div className="text-center text-muted">
+          No plots found for this user.
+        </div>
       )}
 
       <div
@@ -517,14 +524,25 @@ const StepSelectPlot = ({ plots, onSelectPlot }) => (
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
                     <div className="fw-semibold text-dark">
-                      {plot.plot_name} <span className="text-muted small">(ID: {plot.id})</span>
+                      {plot.plot_name}{" "}
+                      <span className="text-muted small">(ID: {plot.id})</span>
                     </div>
                     <div className="small text-muted">
-                      Area: <span className="fw-semibold text-success">{plot.user_provided_area ?? "—"}</span>{" "}
-                      &nbsp;•&nbsp; Status: <span className="fw-semibold">{plot.status?.stage || "Registered"}</span>
+                      Area:{" "}
+                      <span className="fw-semibold text-success">
+                        {plot.user_provided_area ?? "—"}
+                      </span>{" "}
+                      &nbsp;•&nbsp; Status:{" "}
+                      <span className="fw-semibold">
+                        {plot.status?.stage || "Registered"}
+                      </span>
                     </div>
                   </div>
-                  {hasCycles && <span className="badge text-bg-success">{plot.crop_cycles.length} cycle(s)</span>}
+                  {hasCycles && (
+                    <span className="badge text-bg-success">
+                      {plot.crop_cycles.length} cycle(s)
+                    </span>
+                  )}
                 </div>
               </div>
             </button>
@@ -534,7 +552,8 @@ const StepSelectPlot = ({ plots, onSelectPlot }) => (
     </div>
     <div className="card-footer bg-light small text-muted text-center">
       <FaInfoCircle className="me-1" />
-      Once you select a plot, this screen will go away and the details form will appear.
+      Once you select a plot, this screen will go away and the details form will
+      appear.
     </div>
   </div>
 );
@@ -572,7 +591,10 @@ const StepFillForm = ({
           <DetailCol label="Plot Name" value={selectedPlot.plot_name} />
           <DetailCol label="Plot ID" value={selectedPlot.id} />
           <DetailCol label="Area" value={selectedPlot.user_provided_area} />
-          <DetailCol label="Status" value={selectedPlot.status?.stage || "Registered"} />
+          <DetailCol
+            label="Status"
+            value={selectedPlot.status?.stage || "Registered"}
+          />
         </div>
       </div>
 
@@ -582,7 +604,12 @@ const StepFillForm = ({
             <label className="form-label fw-semibold">
               Soil Type <span className="text-danger">*</span>
             </label>
-            <select className="form-select" value={soilType} onChange={(e) => setSoilType(e.target.value)} required>
+            <select
+              className="form-select"
+              value={soilType}
+              onChange={(e) => setSoilType(e.target.value)}
+              required
+            >
               <option value="">Select soil type</option>
               <option value="Black cotton soil">Black cotton soil</option>
               <option value="Red soil">Red soil</option>
@@ -595,21 +622,72 @@ const StepFillForm = ({
           </div>
 
           <div className="col-md-4">
-            <label className="form-label fw-semibold">N (Nitrogen) <span className="text-danger">*</span></label>
-            <input type="number" className="form-control" placeholder="e.g. 80" value={npk.n} onChange={(e) => setNpk({ ...npk, n: e.target.value })} required />
+            <label className="form-label fw-semibold">
+              N (Nitrogen) <span className="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              className="form-control"
+              placeholder="e.g. 80"
+              value={npk.n}
+              onChange={(e) => {
+                let val = e.target.value.replace(/[^\d]/g, ""); // digits only
+                if (val > 1200) val = 1200; // max limit
+                setNpk({ ...npk, n: val });
+              }}
+              min="0"
+              max="1200"
+              required
+            />
           </div>
+
           <div className="col-md-4">
-            <label className="form-label fw-semibold">P (Phosphorus) <span className="text-danger">*</span></label>
-            <input type="number" className="form-control" placeholder="e.g. 40" value={npk.p} onChange={(e) => setNpk({ ...npk, p: e.target.value })} required />
+            <label className="form-label fw-semibold">
+              P (Phosphorus) <span className="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              className="form-control"
+              placeholder="e.g. 40"
+              value={npk.p}
+              onChange={(e) => {
+                let val = e.target.value.replace(/[^\d]/g, "");
+                if (val > 150) val = 150;
+                setNpk({ ...npk, p: val });
+              }}
+              min="0"
+              max="150"
+              required
+            />
           </div>
+
           <div className="col-md-4">
-            <label className="form-label fw-semibold">K (Potassium) <span className="text-danger">*</span></label>
-            <input type="number" className="form-control" placeholder="e.g. 40" value={npk.k} onChange={(e) => setNpk({ ...npk, k: e.target.value })} required />
+            <label className="form-label fw-semibold">
+              K (Potassium) <span className="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              className="form-control"
+              placeholder="e.g. 40"
+              value={npk.k}
+              onChange={(e) => {
+                let val = e.target.value.replace(/[^\d]/g, "");
+                if (val > 800) val = 800;
+                setNpk({ ...npk, k: val });
+              }}
+              min="0"
+              max="800"
+              required
+            />
           </div>
 
           <div className="col-md-6">
             <label className="form-label fw-semibold">Irrigation Level</label>
-            <select className="form-select" value={irrigationLevel} onChange={(e) => setIrrigationLevel(e.target.value)}>
+            <select
+              className="form-select"
+              value={irrigationLevel}
+              onChange={(e) => setIrrigationLevel(e.target.value)}
+            >
               <option value="">Select level</option>
               <option value="rainfed">Rainfed</option>
               <option value="low">Low irrigation</option>
@@ -619,16 +697,38 @@ const StepFillForm = ({
           </div>
 
           <div className="col-12">
-            <label className="form-label fw-semibold">Plot Details (slope, drainage, etc.)</label>
-            <textarea className="form-control" rows={2} placeholder="e.g. Slight slope, good drainage" value={plotDetails} onChange={(e) => setPlotDetails(e.target.value)} />
+            <label className="form-label fw-semibold">
+              Plot Details (slope, drainage, etc.)
+            </label>
+            <textarea
+              className="form-control"
+              rows={2}
+              placeholder="e.g. Slight slope, good drainage"
+              value={plotDetails}
+              onChange={(e) => setPlotDetails(e.target.value)}
+            />
           </div>
 
           <div className="col-12 d-flex justify-content-between mt-2">
-            <button type="button" className="btn btn-outline-secondary" onClick={onBack} disabled={cropsLoading}>
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={onBack}
+              disabled={cropsLoading}
+            >
               Back
             </button>
-            <button type="submit" className="btn btn-success fw-semibold d-flex align-items-center justify-content-center" disabled={cropsLoading}>
-              {cropsLoading && <span className="spinner-border spinner-border-sm me-2" role="status" />}
+            <button
+              type="submit"
+              className="btn btn-success fw-semibold d-flex align-items-center justify-content-center"
+              disabled={cropsLoading}
+            >
+              {cropsLoading && (
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                />
+              )}
               <FaTractor className="me-2" />
               Get recommended crops
             </button>
@@ -665,10 +765,14 @@ const StepRecommendedCrops = ({
   const primaryName = selectedCropNames[0] || null;
   const secondaryName = selectedCropNames[1] || null;
 
-  const primaryCrop = primaryName ? recommendedCrops.find((c) => c.crop_name === primaryName) : null;
+  const primaryCrop = primaryName
+    ? recommendedCrops.find((c) => c.crop_name === primaryName)
+    : null;
 
   const isPrimaryNonOilseed =
-    primaryCrop && primaryCrop.crop_type && primaryCrop.crop_type.toLowerCase() !== "oilseed";
+    primaryCrop &&
+    primaryCrop.crop_type &&
+    primaryCrop.crop_type.toLowerCase() !== "oilseed";
 
   return (
     <div className="card shadow-sm border-0">
@@ -676,7 +780,9 @@ const StepRecommendedCrops = ({
         <FaLeaf className="me-2" />
         <div>
           <div className="fw-semibold">Step 3: Recommended crops</div>
-          <small>First selected = primary, second = secondary. Tap cards to choose.</small>
+          <small>
+            First selected = primary, second = secondary. Tap cards to choose.
+          </small>
         </div>
       </div>
       <div className="card-body small">
@@ -687,26 +793,38 @@ const StepRecommendedCrops = ({
           </div>
         )}
 
-        {cropsError && <div className="alert alert-danger py-2 small">{cropsError}</div>}
+        {cropsError && (
+          <div className="alert alert-danger py-2 small">{cropsError}</div>
+        )}
 
         {isPrimaryNonOilseed && (
           <div className="alert alert-warning d-flex align-items-center py-2 small mb-3">
             <FaInfoCircle className="me-2" />
             <span>
-              Primary crop <strong>{primaryCrop?.crop_name}</strong> is not an oilseed. For intercropping, select an <strong>oilseed crop</strong> as secondary.
+              Primary crop <strong>{primaryCrop?.crop_name}</strong> is not an
+              oilseed. For intercropping, select an{" "}
+              <strong>oilseed crop</strong> as secondary.
             </span>
           </div>
         )}
 
-        {!cropsLoading && !cropsError && recommendedCrops.length === 0 && <div className="text-center text-muted">No crops received from advisory API.</div>}
+        {!cropsLoading && !cropsError && recommendedCrops.length === 0 && (
+          <div className="text-center text-muted">
+            No crops received from advisory API.
+          </div>
+        )}
 
         {recommendedCrops.length > 0 && (
           <>
             <div className="mb-3">
               <div className="fw-semibold mb-1">Your selection</div>
               <div className="d-flex flex-wrap gap-2">
-                <span className="badge bg-success-subtle text-success border border-success">Primary: <strong>{primaryName || "Not selected"}</strong></span>
-                <span className="badge bg-info-subtle text-info border border-info">Secondary: <strong>{secondaryName || "Not selected"}</strong></span>
+                <span className="badge bg-success-subtle text-success border border-success">
+                  Primary: <strong>{primaryName || "Not selected"}</strong>
+                </span>
+                <span className="badge bg-info-subtle text-info border border-info">
+                  Secondary: <strong>{secondaryName || "Not selected"}</strong>
+                </span>
               </div>
             </div>
 
@@ -715,7 +833,8 @@ const StepRecommendedCrops = ({
                 const isPrimary = crop.crop_name === primaryName;
                 const isSecondary = crop.crop_name === secondaryName;
                 const isSelected = isPrimary || isSecondary;
-                const isOilseed = crop.crop_type && crop.crop_type.toLowerCase() === "oilseed";
+                const isOilseed =
+                  crop.crop_type && crop.crop_type.toLowerCase() === "oilseed";
 
                 let borderClass = "border-0";
                 let bgColor = "#f0fdf4";
@@ -751,14 +870,28 @@ const StepRecommendedCrops = ({
                               <span>{crop.crop_name}</span>
                             </div>
                             <div className="d-flex flex-wrap gap-1 mt-1">
-                              <span className="badge rounded-pill bg-success-subtle text-success border border-success-subtle">{crop.crop_type}</span>
-                              <span className="badge rounded-pill bg-light text-secondary border border-secondary-subtle">{crop.season_recommended}</span>
+                              <span className="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                                {crop.crop_type}
+                              </span>
+                              <span className="badge rounded-pill bg-light text-secondary border border-secondary-subtle">
+                                {crop.season_recommended}
+                              </span>
                             </div>
                           </div>
                           <div className="text-end">
-                            {isPrimary && <span className="badge bg-success">Primary</span>}
-                            {isSecondary && !isPrimary && <span className="badge bg-info text-dark">Secondary</span>}
-                            {!isSelected && isOilseed && <span className="badge bg-warning text-dark">Oilseed</span>}
+                            {isPrimary && (
+                              <span className="badge bg-success">Primary</span>
+                            )}
+                            {isSecondary && !isPrimary && (
+                              <span className="badge bg-info text-dark">
+                                Secondary
+                              </span>
+                            )}
+                            {!isSelected && isOilseed && (
+                              <span className="badge bg-warning text-dark">
+                                Oilseed
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -768,18 +901,41 @@ const StepRecommendedCrops = ({
                             <span>{crop.price_forecasted}</span>
                           </div>
                           <div>
-                            <span className="small text-muted me-2">Demand:</span>
-                            <span className={`badge ${String(crop.demand || "").toLowerCase() === "high" ? "bg-danger text-white" : String(crop.demand || "").toLowerCase() === "medium" ? "bg-warning text-dark" : "bg-success text-white"} rounded-pill`}>
+                            <span className="small text-muted me-2">
+                              Demand:
+                            </span>
+                            <span
+                              className={`badge ${
+                                String(crop.demand || "").toLowerCase() ===
+                                "high"
+                                  ? "bg-danger text-white"
+                                  : String(crop.demand || "").toLowerCase() ===
+                                    "medium"
+                                  ? "bg-warning text-dark"
+                                  : "bg-success text-white"
+                              } rounded-pill`}
+                            >
                               {crop.demand || "—"}
                             </span>
                           </div>
                         </div>
 
                         <div className="d-flex gap-2 flex-wrap">
-                          {(crop.government_schemes || []).slice(0, 2).map((s) => (
-                            <span key={s.name} className="badge bg-light border text-dark small">{s.name}</span>
-                          ))}
-                          {(crop.government_schemes || []).length > 2 && <span className="badge bg-light border text-dark small">+{crop.government_schemes.length - 2} more</span>}
+                          {(crop.government_schemes || [])
+                            .slice(0, 2)
+                            .map((s) => (
+                              <span
+                                key={s.name}
+                                className="badge bg-light border text-dark small"
+                              >
+                                {s.name}
+                              </span>
+                            ))}
+                          {(crop.government_schemes || []).length > 2 && (
+                            <span className="badge bg-light border text-dark small">
+                              +{crop.government_schemes.length - 2} more
+                            </span>
+                          )}
                         </div>
 
                         <button
@@ -787,31 +943,60 @@ const StepRecommendedCrops = ({
                           className="btn btn-sm btn-outline-success mt-2"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setExpandedCropName((prev) => (prev === crop.crop_name ? null : crop.crop_name));
+                            setExpandedCropName((prev) =>
+                              prev === crop.crop_name ? null : crop.crop_name
+                            );
                           }}
                         >
                           {expanded ? (
-                            <>Hide details <FaChevronUp className="ms-2" /></>
+                            <>
+                              Hide details <FaChevronUp className="ms-2" />
+                            </>
                           ) : (
-                            <>Details <FaChevronDown className="ms-2" /></>
+                            <>
+                              Details <FaChevronDown className="ms-2" />
+                            </>
                           )}
                         </button>
 
                         {expanded && (
                           <div className="mt-2 small border-top pt-2">
-                            <div className="mb-1"><span className="fw-semibold">Breed: </span>{crop.breed}</div>
-                            <div className="mb-1"><span className="fw-semibold">Weather: </span>{crop.suitable_weather}</div>
-                            <div className="mb-1 d-flex align-items-start"><FaBug className="me-1 mt-1" /><span><span className="fw-semibold">Pests: </span>{crop.pest_info}</span></div>
-                            {Array.isArray(crop.government_schemes) && crop.government_schemes.length > 0 && (
-                              <div className="mt-1">
-                                <div className="fw-semibold mb-1 d-flex align-items-center"><FaCertificate className="me-1" />Government schemes:</div>
-                                <ul className="ps-3 mb-0">
-                                  {crop.government_schemes.map((s) => (
-                                    <li key={s.name}><span className="fw-semibold">{s.name}</span>{s.description ? ` — ${s.description}` : ""}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                            <div className="mb-1">
+                              <span className="fw-semibold">Breed: </span>
+                              {crop.breed}
+                            </div>
+                            <div className="mb-1">
+                              <span className="fw-semibold">Weather: </span>
+                              {crop.suitable_weather}
+                            </div>
+                            <div className="mb-1 d-flex align-items-start">
+                              <FaBug className="me-1 mt-1" />
+                              <span>
+                                <span className="fw-semibold">Pests: </span>
+                                {crop.pest_info}
+                              </span>
+                            </div>
+                            {Array.isArray(crop.government_schemes) &&
+                              crop.government_schemes.length > 0 && (
+                                <div className="mt-1">
+                                  <div className="fw-semibold mb-1 d-flex align-items-center">
+                                    <FaCertificate className="me-1" />
+                                    Government schemes:
+                                  </div>
+                                  <ul className="ps-3 mb-0">
+                                    {crop.government_schemes.map((s) => (
+                                      <li key={s.name}>
+                                        <span className="fw-semibold">
+                                          {s.name}
+                                        </span>
+                                        {s.description
+                                          ? ` — ${s.description}`
+                                          : ""}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                           </div>
                         )}
                       </div>
@@ -865,8 +1050,10 @@ const StepRecommendedPlans = ({
 
   const demandBadge = (d) => {
     const dd = String(d || "").toLowerCase();
-    if (dd.includes("high")) return { txt: "High", cls: "bg-danger text-white" };
-    if (dd.includes("medium")) return { txt: "Medium", cls: "bg-warning text-dark" };
+    if (dd.includes("high"))
+      return { txt: "High", cls: "bg-danger text-white" };
+    if (dd.includes("medium"))
+      return { txt: "Medium", cls: "bg-warning text-dark" };
     if (dd.includes("low")) return { txt: "Low", cls: "bg-success text-white" };
     return { txt: d || "—", cls: "bg-secondary text-white" };
   };
@@ -875,11 +1062,18 @@ const StepRecommendedPlans = ({
     <div className="card shadow-sm border-0">
       <div className="card-header bg-warning bg-gradient d-flex justify-content-between align-items-center">
         <div>
-          <div className="fw-semibold text-dark">Step 4 — Choose best crop plan</div>
-          <small className="text-muted">Based on <b>{primaryName}</b> + <b>{secondaryName}</b></small>
+          <div className="fw-semibold text-dark">
+            Step 4 — Choose best crop plan
+          </div>
+          <small className="text-muted">
+            Based on <b>{primaryName}</b> + <b>{secondaryName}</b>
+          </small>
         </div>
         <div className="badge rounded-pill bg-success-subtle text-success border border-success">
-          Total area: <strong>{primaryCrop ? `${primaryCrop.plot_area ?? "—"} acres` : "—"}</strong>
+          Total area:{" "}
+          <strong>
+            {primaryCrop ? `${primaryCrop.plot_area ?? "—"} acres` : "—"}
+          </strong>
         </div>
       </div>
 
@@ -891,7 +1085,9 @@ const StepRecommendedPlans = ({
           </div>
         )}
 
-        {plansError && <div className="alert alert-danger small">{plansError}</div>}
+        {plansError && (
+          <div className="alert alert-danger small">{plansError}</div>
+        )}
 
         {!plansLoading && !plansError && recommendedPlans.length === 0 && (
           <div className="text-center text-muted">No plans received.</div>
@@ -901,7 +1097,10 @@ const StepRecommendedPlans = ({
           <>
             <div className="mb-3">
               <div className="fw-semibold mb-1">Available plans</div>
-              <div className="small text-muted">Tap a plan to select. Click <strong>Details</strong> to open more information.</div>
+              <div className="small text-muted">
+                Tap a plan to select. Click <strong>Details</strong> to open
+                more information.
+              </div>
             </div>
 
             <div className="row g-3">
@@ -916,7 +1115,9 @@ const StepRecommendedPlans = ({
                 return (
                   <div className="col-md-6" key={`${plan.ratio_label}-${idx}`}>
                     <div
-                      className={`card h-100 shadow-sm ${isSelected ? "border-3 border-success" : "border"}`}
+                      className={`card h-100 shadow-sm ${
+                        isSelected ? "border-3 border-success" : "border"
+                      }`}
                       style={{
                         cursor: "pointer",
                         background: pal.bg,
@@ -941,21 +1142,34 @@ const StepRecommendedPlans = ({
                                 Plan {label}
                               </span>
                               <div className="fw-bold">
-                                {plan.primary_crop_name} {plan.primary_percentage}% • {plan.secondary_crop_name} {plan.secondary_percentage}%
+                                {plan.primary_crop_name}{" "}
+                                {plan.primary_percentage}% •{" "}
+                                {plan.secondary_crop_name}{" "}
+                                {plan.secondary_percentage}%
                               </div>
                             </div>
-                            <div className="small text-muted mt-1">{plan.benefit_summary}</div>
+                            <div className="small text-muted mt-1">
+                              {plan.benefit_summary}
+                            </div>
                           </div>
 
                           <div className="text-end">
                             <div className="small text-muted">Expected</div>
                             <div className="fw-semibold d-flex align-items-center">
                               <FaRupeeSign className="me-1 text-success" />
-                              <span style={{ fontSize: "1.05rem" }}>{Number(plan.projected_income_value || 0).toLocaleString("en-IN")}</span>
+                              <span style={{ fontSize: "1.05rem" }}>
+                                {Number(
+                                  plan.projected_income_value || 0
+                                ).toLocaleString("en-IN")}
+                              </span>
                             </div>
 
                             <div className="mt-2">
-                              <span className={`badge ${demand.cls} rounded-pill`}>Demand :{demand.txt}</span>
+                              <span
+                                className={`badge ${demand.cls} rounded-pill`}
+                              >
+                                Demand :{demand.txt}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -969,9 +1183,13 @@ const StepRecommendedPlans = ({
                             borderRadius: 10,
                           }}
                         >
-                          <div className="fw-semibold text-success mb-1">Government schemes</div>
+                          <div className="fw-semibold text-success mb-1">
+                            Government schemes
+                          </div>
                           {schemes.length === 0 ? (
-                            <div className="small text-muted">No schemes available.</div>
+                            <div className="small text-muted">
+                              No schemes available.
+                            </div>
                           ) : (
                             <ul className="ps-3 mb-0 small">
                               {schemes.slice(0, 6).map((s) => (
@@ -980,7 +1198,11 @@ const StepRecommendedPlans = ({
                                   {s.description ? ` — ${s.description}` : ""}
                                 </li>
                               ))}
-                              {schemes.length > 6 && <li className="text-muted">+{schemes.length - 6} more</li>}
+                              {schemes.length > 6 && (
+                                <li className="text-muted">
+                                  +{schemes.length - 6} more
+                                </li>
+                              )}
                             </ul>
                           )}
                         </div>
@@ -992,15 +1214,27 @@ const StepRecommendedPlans = ({
                             className="btn btn-sm btn-outline-secondary"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setExpandedPlanIndex((prev) => (prev === idx ? null : idx));
+                              setExpandedPlanIndex((prev) =>
+                                prev === idx ? null : idx
+                              );
                             }}
                           >
-                            {expanded ? <>Hide details <FaChevronUp className="ms-2" /></> : <>Details <FaChevronDown className="ms-2" /></>}
+                            {expanded ? (
+                              <>
+                                Hide details <FaChevronUp className="ms-2" />
+                              </>
+                            ) : (
+                              <>
+                                Details <FaChevronDown className="ms-2" />
+                              </>
+                            )}
                           </button>
 
                           <button
                             type="button"
-                            className={`btn btn-sm ${isSelected ? "btn-success" : "btn-outline-success"}`}
+                            className={`btn btn-sm ${
+                              isSelected ? "btn-success" : "btn-outline-success"
+                            }`}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedPlanIndex(idx);
@@ -1024,11 +1258,15 @@ const StepRecommendedPlans = ({
                             </div>
 
                             <div className="mb-2">
-                              <div className="fw-semibold">Government schemes (full list)</div>
+                              <div className="fw-semibold">
+                                Government schemes (full list)
+                              </div>
                               <ul className="ps-3 mb-0">
                                 {schemes.map((s) => (
                                   <li key={s.name}>
-                                    <span className="fw-semibold">{s.name}</span>
+                                    <span className="fw-semibold">
+                                      {s.name}
+                                    </span>
                                     {s.description ? ` — ${s.description}` : ""}
                                   </li>
                                 ))}
@@ -1044,8 +1282,14 @@ const StepRecommendedPlans = ({
             </div>
 
             <div className="d-flex justify-content-between mt-3">
-              <button className="btn btn-outline-secondary" onClick={onBack}>Back</button>
-              <button className="btn btn-success" onClick={onConfirmPlan} disabled={selectedPlanIndex === null}>
+              <button className="btn btn-outline-secondary" onClick={onBack}>
+                Back
+              </button>
+              <button
+                className="btn btn-success"
+                onClick={onConfirmPlan}
+                disabled={selectedPlanIndex === null}
+              >
                 Confirm and Save Plan <FaArrowRight className="ms-2" />
               </button>
             </div>
@@ -1057,7 +1301,14 @@ const StepRecommendedPlans = ({
 };
 
 /* ---------- STEP 5: FINAL STATUS (saving result + redirect) ---------- */
-const StepFinalStatus = ({ finalJson, saveLoading, saveError, saveSuccess, selectedPlot, onStartOver }) => {
+const StepFinalStatus = ({
+  finalJson,
+  saveLoading,
+  saveError,
+  saveSuccess,
+  selectedPlot,
+  onStartOver,
+}) => {
   return (
     <div className="card shadow-sm border-0">
       <div className="card-header bg-success bg-gradient text-white d-flex align-items-center">
@@ -1082,7 +1333,12 @@ const StepFinalStatus = ({ finalJson, saveLoading, saveError, saveSuccess, selec
             <div className="fw-semibold">Failed to save plan</div>
             <div className="small">{saveError}</div>
             <div className="mt-3 d-flex gap-2">
-              <button className="btn btn-outline-secondary btn-sm" onClick={onStartOver}>Start over</button>
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                onClick={onStartOver}
+              >
+                Start over
+              </button>
             </div>
           </div>
         )}
@@ -1090,10 +1346,14 @@ const StepFinalStatus = ({ finalJson, saveLoading, saveError, saveSuccess, selec
         {!saveLoading && saveSuccess && (
           <div className="text-center py-4">
             <div className="mb-3">
-              <div className="h4 text-success fw-bold">Crops successfully added to the Plot</div>
+              <div className="h4 text-success fw-bold">
+                Crops successfully added to the Plot
+              </div>
             </div>
 
-            <p className="text-muted small mb-3">You can manage the plot fields now.</p>
+            <p className="text-muted small mb-3">
+              You can manage the plot fields now.
+            </p>
 
             <div className="d-flex justify-content-center gap-2">
               <button
@@ -1107,10 +1367,7 @@ const StepFinalStatus = ({ finalJson, saveLoading, saveError, saveSuccess, selec
                 Go to Manage Fields
               </button>
 
-              <button
-                className="btn btn-outline-success"
-                onClick={onStartOver}
-              >
+              <button className="btn btn-outline-success" onClick={onStartOver}>
                 Do another plot
               </button>
             </div>

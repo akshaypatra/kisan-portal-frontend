@@ -113,7 +113,11 @@ export default function ManageFields() {
   const [saving, setSaving] = useState(false);
 
   // Delete confirm
-  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null, name: "" });
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    open: false,
+    id: null,
+    name: "",
+  });
   const [deleting, setDeleting] = useState(false);
   const [harvestModal, setHarvestModal] = useState({
     open: false,
@@ -125,25 +129,34 @@ export default function ManageFields() {
     date: "",
     finalYield: "",
   });
-  const [historyModal, setHistoryModal] = useState({ open: false, cropName: "", events: [] });
+  const [historyModal, setHistoryModal] = useState({
+    open: false,
+    cropName: "",
+    events: [],
+  });
 
   // ---------- load plots from backend & merge with samples ----------
   useEffect(() => {
     fetchRemotePlots();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchRemotePlots() {
     if (!farmerId) {
       setFields((prev) => prev.filter((f) => !f.isRemote));
-      setAlert({ type: "warning", msg: "Log in to view your registered fields." });
+      setAlert({
+        type: "warning",
+        msg: "Log in to view your registered fields.",
+      });
       setLoading(false);
       setTimeout(() => setAlert(null), 3000);
       return;
     }
     setLoading(true);
     try {
-      const { data } = await api.get(`${PLOTS_ENDPOINT}/with-cycles/${farmerId}`);
+      const { data } = await api.get(
+        `${PLOTS_ENDPOINT}/with-cycles/${farmerId}`
+      );
       const mapped = Array.isArray(data) ? data.map(mapPlotToField) : [];
       setFields((prev) => {
         const locals = prev.filter((f) => !f.isRemote);
@@ -156,7 +169,10 @@ export default function ManageFields() {
         setFields((prev) => prev.filter((f) => !f.isRemote));
         setAlert({ type: "info", msg: "No plots found for your account yet." });
       } else {
-        setAlert({ type: "warning", msg: "Could not reach backend. Showing cached/demo fields." });
+        setAlert({
+          type: "warning",
+          msg: "Could not reach backend. Showing cached/demo fields.",
+        });
       }
     } finally {
       setLoading(false);
@@ -166,7 +182,8 @@ export default function ManageFields() {
 
   function mapPlotToField(plot) {
     const polygonCoords =
-      plot.polygon_coordinates && Array.isArray(plot.polygon_coordinates.coordinates)
+      plot.polygon_coordinates &&
+      Array.isArray(plot.polygon_coordinates.coordinates)
         ? plot.polygon_coordinates.coordinates[0] || []
         : [];
     const mapPolygon = polygonCoords.map(([lng, lat]) => [lat, lng]);
@@ -177,8 +194,10 @@ export default function ManageFields() {
     const centroid =
       mapPolygon.length > 0
         ? {
-            lat: mapPolygon.reduce((sum, p) => sum + p[0], 0) / mapPolygon.length,
-            lng: mapPolygon.reduce((sum, p) => sum + p[1], 0) / mapPolygon.length,
+            lat:
+              mapPolygon.reduce((sum, p) => sum + p[0], 0) / mapPolygon.length,
+            lng:
+              mapPolygon.reduce((sum, p) => sum + p[1], 0) / mapPolygon.length,
           }
         : null;
     const mapCenter = markerPoint || centroid;
@@ -188,7 +207,9 @@ export default function ManageFields() {
       : 0;
     const fallbackArea = Number(plot.user_provided_area) || 0;
     const area_acres = calculated || fallbackArea;
-    const stage = (plot.status && (plot.status.stage || plot.status.status)) || "Registered";
+    const stage =
+      (plot.status && (plot.status.stage || plot.status.status)) ||
+      "Registered";
     const cropCycles = Array.isArray(plot.crop_cycles) ? plot.crop_cycles : [];
     return {
       id: `db-${plot.id}`,
@@ -239,7 +260,9 @@ export default function ManageFields() {
         name: "",
         area_acres: "",
         stage: "Sowing",
-        crops: [{ name: "", area_acres: "", stage: "Growing", sowing_date: "" }],
+        crops: [
+          { name: "", area_acres: "", stage: "Growing", sowing_date: "" },
+        ],
       });
     }
     setEditing(true);
@@ -261,7 +284,9 @@ export default function ManageFields() {
   function updateCrop(idx, key, value) {
     setEditField((prev) => {
       const next = { ...prev };
-      next.crops = next.crops.map((c, i) => (i === idx ? { ...c, [key]: value } : c));
+      next.crops = next.crops.map((c, i) =>
+        i === idx ? { ...c, [key]: value } : c
+      );
       return next;
     });
   }
@@ -269,7 +294,10 @@ export default function ManageFields() {
   function addCropRow() {
     setEditField((prev) => ({
       ...prev,
-      crops: [...prev.crops, { name: "", area_acres: "", stage: "Growing", sowing_date: "" }],
+      crops: [
+        ...prev.crops,
+        { name: "", area_acres: "", stage: "Growing", sowing_date: "" },
+      ],
     }));
   }
 
@@ -282,10 +310,16 @@ export default function ManageFields() {
   }
 
   function validateFieldPayload(payload) {
-    if (!payload.name || payload.name.trim().length < 2) return "Name is required.";
-    if (!payload.area_acres || Number.isNaN(Number(payload.area_acres)) || Number(payload.area_acres) <= 0)
+    if (!payload.name || payload.name.trim().length < 2)
+      return "Name is required.";
+    if (
+      !payload.area_acres ||
+      Number.isNaN(Number(payload.area_acres)) ||
+      Number(payload.area_acres) <= 0
+    )
       return "Area (acres) must be a positive number.";
-    if (!payload.crops || payload.crops.length === 0) return "Add at least one crop.";
+    if (!payload.crops || payload.crops.length === 0)
+      return "Add at least one crop.";
     const invalidCrop = payload.crops.find(
       (c) =>
         !c.name ||
@@ -293,7 +327,8 @@ export default function ManageFields() {
         Number(c.area_acres) <= 0 ||
         !c.sowing_date
     );
-    if (invalidCrop) return "Each crop needs a name, sowing date, and positive area (acres).";
+    if (invalidCrop)
+      return "Each crop needs a name, sowing date, and positive area (acres).";
     return null;
   }
 
@@ -337,7 +372,9 @@ export default function ManageFields() {
             id: data.id,
             cycleId: data.id,
             stage: data.status,
-            sowing_date: data.sowing_date ? data.sowing_date.slice(0, 10) : c.sowing_date,
+            sowing_date: data.sowing_date
+              ? data.sowing_date.slice(0, 10)
+              : c.sowing_date,
             harvested_qty_total: data.harvested_qty_total || 0,
             harvested_area_total: data.harvested_area_total || 0,
             fromApi: true,
@@ -355,10 +392,24 @@ export default function ManageFields() {
               : f
           )
         );
-        setAlert({ type: "success", msg: createdCrops.length > 0 ? "Crop(s) added to plot." : "No changes to save." });
+        setAlert({
+          type: "success",
+          msg:
+            createdCrops.length > 0
+              ? "Crop(s) added to plot."
+              : "No changes to save.",
+        });
       } else {
-        const newId = Math.max(0, ...fields.map((f) => (typeof f.id === "number" ? f.id : 0))) + 1;
-        const created = { ...payload, id: newId, last_updated: new Date().toISOString().slice(0, 10) };
+        const newId =
+          Math.max(
+            0,
+            ...fields.map((f) => (typeof f.id === "number" ? f.id : 0))
+          ) + 1;
+        const created = {
+          ...payload,
+          id: newId,
+          last_updated: new Date().toISOString().slice(0, 10),
+        };
         setFields((prev) => [created, ...prev]);
         setAlert({ type: "success", msg: "Field created locally." });
       }
@@ -373,20 +424,88 @@ export default function ManageFields() {
   }
 
   // ---------- Local delete ----------
-  function requestDelete(id, name) {
-    setDeleteConfirm({ open: true, id, name });
+  // ---------- Delete confirm ----------
+  function requestDelete(field) {
+    // Accept full field object so we can extract dbId safely
+    const idForDisplay = field.name || field.plot_name || field.id;
+    // store the dbId (or fallback to id)
+    const dbId =
+      field.dbId ||
+      (typeof field.id === "string" && field.id.startsWith("db-")
+        ? field.id.slice(3)
+        : field.id);
+    setDeleteConfirm({
+      open: true,
+      id: dbId,
+      name: idForDisplay,
+      rawField: field,
+    });
   }
 
   async function confirmDelete() {
-    const { id } = deleteConfirm;
-    if (!id) return;
+    const { id: dbId, rawField } = deleteConfirm;
+    if (!dbId) return;
     setDeleting(true);
+
+    // get token from localStorage
+    const token =
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("token") ||
+      null;
+
     try {
-      setFields((prev) => prev.filter((f) => f.id !== id));
-      setAlert({ type: "success", msg: "Field deleted (local)." });
+      // prefer using your api wrapper - pass auth header if wrapper doesn't do it
+      if (api && typeof api.delete === "function") {
+        // Some api clients accept (url, { headers })
+        // Try to call without headers first (common wrappers like axios already set defaults)
+        try {
+          await api.delete(`${PLOTS_ENDPOINT}/${dbId}`);
+        } catch (innerErr) {
+          // fallback: include Authorization header manually
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          await api.delete(`${PLOTS_ENDPOINT}/${dbId}`, { headers });
+        }
+      } else {
+        // fallback to fetch if api wrapper is unavailable
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch(`${PLOTS_ENDPOINT}/${dbId}`, {
+          method: "DELETE",
+          headers,
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          throw new Error(text || `Delete failed: ${res.status}`);
+        }
+      }
+
+      // remove from UI
+      setFields((prev) =>
+        prev.filter((f) => {
+          // use dbId if present, else compare with id
+          const fdb =
+            f.dbId ||
+            (typeof f.id === "string" && f.id.startsWith("db-")
+              ? f.id.slice(3)
+              : f.id);
+          return String(fdb) !== String(dbId);
+        })
+      );
+
+      setAlert({ type: "success", msg: "Field deleted from server." });
     } catch (err) {
-      console.error(err);
-      setAlert({ type: "warning", msg: "Failed to delete field." }); // use warning instead of danger
+      console.error("Delete error:", err);
+      const msg =
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Failed to delete field from server.";
+      // fallback: if deletion failed but field was local-only, remove locally
+      if (rawField && !rawField.isRemote) {
+        setFields((prev) => prev.filter((f) => f.id !== rawField.id));
+        setAlert({ type: "success", msg: "Local field removed." });
+      } else {
+        setAlert({ type: "warning", msg });
+      }
     } finally {
       setDeleting(false);
       setDeleteConfirm({ open: false, id: null, name: "" });
@@ -406,7 +525,8 @@ export default function ManageFields() {
 
   function openHarvestModal(fieldId, cropIndex, isFinal = false) {
     const targetField = fields.find((f) => f.id === fieldId);
-    if (!targetField || !targetField.crops || !targetField.crops[cropIndex]) return;
+    if (!targetField || !targetField.crops || !targetField.crops[cropIndex])
+      return;
     const targetCrop = targetField.crops[cropIndex];
     setHarvestModal({
       open: true,
@@ -415,7 +535,10 @@ export default function ManageFields() {
       qty: "",
       area: "",
       isFinal,
-      maxArea: Math.max(0, (targetCrop.area_acres || 0) - (targetCrop.harvested_area_total || 0)),
+      maxArea: Math.max(
+        0,
+        (targetCrop.area_acres || 0) - (targetCrop.harvested_area_total || 0)
+      ),
       cropName: targetCrop.name,
       date: new Date().toISOString().slice(0, 10),
       finalYield: "",
@@ -438,9 +561,11 @@ export default function ManageFields() {
   }
 
   async function submitHarvest() {
-    const { fieldId, cropIndex, qty, area, isFinal, date, finalYield } = harvestModal;
+    const { fieldId, cropIndex, qty, area, isFinal, date, finalYield } =
+      harvestModal;
     const targetField = fields.find((f) => f.id === fieldId);
-    if (!targetField || !targetField.crops || !targetField.crops[cropIndex]) return;
+    if (!targetField || !targetField.crops || !targetField.crops[cropIndex])
+      return;
     const targetCrop = targetField.crops[cropIndex];
 
     const harvestDate = date || new Date().toISOString().slice(0, 10);
@@ -472,16 +597,31 @@ export default function ManageFields() {
       return;
     }
 
-    const remainingArea = Math.max(0, (targetCrop.area_acres || 0) - (targetCrop.harvested_area_total || 0));
+    const remainingArea = Math.max(
+      0,
+      (targetCrop.area_acres || 0) - (targetCrop.harvested_area_total || 0)
+    );
     if (isFinal && remainingArea <= 0) {
-      setAlert({ type: "warning", msg: "This crop is already fully harvested." });
+      setAlert({
+        type: "warning",
+        msg: "This crop is already fully harvested.",
+      });
       setTimeout(() => setAlert(null), 2500);
       return;
     }
 
-    const effectiveArea = isFinal ? remainingArea || areaNum : (areaNum || remainingArea);
-    if (!effectiveArea || effectiveArea > (targetCrop.area_acres || 0) || effectiveArea > remainingArea + 1e-6) {
-      setAlert({ type: "warning", msg: "Harvest area exceeds available crop area." });
+    const effectiveArea = isFinal
+      ? remainingArea || areaNum
+      : areaNum || remainingArea;
+    if (
+      !effectiveArea ||
+      effectiveArea > (targetCrop.area_acres || 0) ||
+      effectiveArea > remainingArea + 1e-6
+    ) {
+      setAlert({
+        type: "warning",
+        msg: "Harvest area exceeds available crop area.",
+      });
       setTimeout(() => setAlert(null), 2500);
       return;
     }
@@ -514,7 +654,11 @@ export default function ManageFields() {
           };
         }
       } else {
-        createdHarvest = harvestEventTemplate(isFinal ? finalYieldNum : qtyNum, effectiveArea || null, harvestDate);
+        createdHarvest = harvestEventTemplate(
+          isFinal ? finalYieldNum : qtyNum,
+          effectiveArea || null,
+          harvestDate
+        );
       }
 
       const quantityDelta = isFinal ? finalYieldNum : qtyNum;
@@ -525,27 +669,44 @@ export default function ManageFields() {
             .map((c, idx) => {
               if (idx !== cropIndex) return c;
               const nextHarvests =
-                createdHarvest && !isFinal ? [...(c.harvests || []), createdHarvest] : c.harvests || [];
-              const newHarvestedArea = (c.harvested_area_total || 0) + (effectiveArea || 0);
-              const fullyHarvested = isFinal || (effectiveArea && newHarvestedArea + 1e-6 >= (c.area_acres || 0));
+                createdHarvest && !isFinal
+                  ? [...(c.harvests || []), createdHarvest]
+                  : c.harvests || [];
+              const newHarvestedArea =
+                (c.harvested_area_total || 0) + (effectiveArea || 0);
+              const fullyHarvested =
+                isFinal ||
+                (effectiveArea &&
+                  newHarvestedArea + 1e-6 >= (c.area_acres || 0));
               const status = fullyHarvested ? "Harvested" : "Partial harvest";
               return {
                 ...c,
                 harvests: nextHarvests,
-                harvested_qty_total: (c.harvested_qty_total || 0) + (quantityDelta || 0),
+                harvested_qty_total:
+                  (c.harvested_qty_total || 0) + (quantityDelta || 0),
                 harvested_area_total: newHarvestedArea,
                 stage: status,
               };
             })
             .filter((c, idx) => !(isFinal && idx === cropIndex));
-          return { ...f, crops: updatedCrops, last_updated: new Date().toISOString().slice(0, 10) };
+          return {
+            ...f,
+            crops: updatedCrops,
+            last_updated: new Date().toISOString().slice(0, 10),
+          };
         })
       );
-      setAlert({ type: "success", msg: isFinal ? "Marked as fully harvested." : "Harvest logged." });
+      setAlert({
+        type: "success",
+        msg: isFinal ? "Marked as fully harvested." : "Harvest logged.",
+      });
       closeHarvestModal();
     } catch (err) {
       console.error(err);
-      const msg = err?.response?.data?.detail || err?.response?.data?.message || "Could not register harvest.";
+      const msg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        "Could not register harvest.";
       setAlert({ type: "warning", msg });
     } finally {
       setTimeout(() => setAlert(null), 2500);
@@ -553,7 +714,11 @@ export default function ManageFields() {
   }
 
   function openHistory(crop) {
-    setHistoryModal({ open: true, cropName: crop.name, events: crop.harvests || [] });
+    setHistoryModal({
+      open: true,
+      cropName: crop.name,
+      events: crop.harvests || [],
+    });
   }
 
   function closeHistory() {
@@ -577,7 +742,10 @@ export default function ManageFields() {
   const displayedFields = useMemo(() => {
     if (!plotId) return fields;
     return fields.filter((f) => {
-      const key = f.routeKey || (f.dbId ? String(f.dbId) : null) || (typeof f.id === "number" ? String(f.id) : `${f.id}`);
+      const key =
+        f.routeKey ||
+        (f.dbId ? String(f.dbId) : null) ||
+        (typeof f.id === "number" ? String(f.id) : `${f.id}`);
       return key === plotId;
     });
   }, [fields, plotId]);
@@ -615,25 +783,41 @@ export default function ManageFields() {
         <div className="hero-title">
           <div
             className="d-flex align-items-center justify-content-center"
-            style={{ width: 58, height: 58, borderRadius: 12, background: "#eef8ee", color: "#2f7a3a" }}
+            style={{
+              width: 58,
+              height: 58,
+              borderRadius: 12,
+              background: "#eef8ee",
+              color: "#2f7a3a",
+            }}
           >
             <FaMap size={26} />
           </div>
           <div>
-            <h3 className="mb-0" style={{ color: "#1f4d2e" }}>Manage Fields</h3>
+            <h3 className="mb-0" style={{ color: "#1f4d2e" }}>
+              Manage Fields
+            </h3>
           </div>
         </div>
 
         <div className="d-flex gap-2">
-          <button className="btn btn-outline-secondary" onClick={() => navigate("/plot-registration")} title="Register new plot">
+          <button
+            className="btn btn-outline-secondary"
+            onClick={() => navigate("/plot-registration")}
+            title="Register new plot"
+          >
             <FaPlus style={{ marginRight: 8 }} /> New Plot
           </button>
-
         </div>
       </div>
 
       {alert && (
-        <div className={`alert alert-${alert.type === "danger" ? "warning" : alert.type} py-2`} role="alert">
+        <div
+          className={`alert alert-${
+            alert.type === "danger" ? "warning" : alert.type
+          } py-2`}
+          role="alert"
+        >
           {alert.msg}
         </div>
       )}
@@ -641,7 +825,9 @@ export default function ManageFields() {
       <div className="page-card mb-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <div>
-            <strong style={{ color: "#184723" }}>{plotId ? "Selected field" : "All fields"}</strong>
+            <strong style={{ color: "#184723" }}>
+              {plotId ? "Selected field" : "All fields"}
+            </strong>
             <div className="small-muted">Total: {displayedFields.length}</div>
           </div>
           <div>
@@ -664,150 +850,222 @@ export default function ManageFields() {
         <div className="row g-3">
           {displayedFields.length === 0 && !loading && (
             <div className="col-12">
-              <div className="p-4 text-center text-muted">No fields yet. Click "Add Field" to create one.</div>
+              <div className="p-4 text-center text-muted">
+                No fields yet. Click "Add Field" to create one.
+              </div>
             </div>
           )}
 
           {displayedFields.map((f) => {
             const remainingArea = getRemainingArea(f);
-            const fallbackId = typeof f.id === "string" ? f.id : String(f.id ?? "");
-            const routeTarget = f.routeKey || (f.dbId ? String(f.dbId) : fallbackId);
+            const fallbackId =
+              typeof f.id === "string" ? f.id : String(f.id ?? "");
+            const routeTarget =
+              f.routeKey || (f.dbId ? String(f.dbId) : fallbackId);
             return (
-            <div key={f.id} className="col-12 col-md-6 col-lg-4 d-flex">
-              <div className="card field-row w-100">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between">
-                    <div>
-                      <div style={{ fontWeight: 800, color: "#153d2b" }}>{f.name}</div>
-                      <div className="small-muted">
-                        {f.stage} | {f.area_acres} ac
+              <div key={f.id} className="col-12 col-md-6 col-lg-4 d-flex">
+                <div className="card field-row w-100">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between">
+                      <div>
+                        <div style={{ fontWeight: 800, color: "#153d2b" }}>
+                          {f.name}
+                        </div>
+                        <div className="small-muted">
+                          {f.stage} | {f.area_acres} ac
+                        </div>
+                        <div className="small-muted">
+                          Unused area: <strong>{remainingArea}</strong> ac
+                        </div>
                       </div>
-                      <div className="small-muted">
-                        Unused area: <strong>{remainingArea}</strong> ac
+
+                      <div className="text-end">
+                        <div className="small-muted">Updated</div>
+                        <div style={{ fontWeight: 700 }}>
+                          {f.last_updated ?? "-"}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-end">
-                      <div className="small-muted">Updated</div>
-                      <div style={{ fontWeight: 700 }}>{f.last_updated ?? "-"}</div>
-                    </div>
-                  </div>
-
-                  {f.map_center && (
-                    <div className="mt-2 rounded-3 overflow-hidden border" style={{ height: 200 }}>
-                      <MapContainer
-                        center={[f.map_center.lat, f.map_center.lng]}
-                        zoom={15}
-                        style={{ height: "100%", width: "100%" }}
-                        scrollWheelZoom={false}
-                        dragging={false}
-                        doubleClickZoom={false}
+                    {f.map_center && (
+                      <div
+                        className="mt-2 rounded-3 overflow-hidden border"
+                        style={{ height: 200 }}
                       >
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        {Array.isArray(f.map_polygon) && f.map_polygon.length > 0 && (
-                          <Polygon pathOptions={{ color: "#2f7a3a" }} positions={f.map_polygon} />
+                        <MapContainer
+                          center={[f.map_center.lat, f.map_center.lng]}
+                          zoom={15}
+                          style={{ height: "100%", width: "100%" }}
+                          scrollWheelZoom={false}
+                          dragging={false}
+                          doubleClickZoom={false}
+                        >
+                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                          {Array.isArray(f.map_polygon) &&
+                            f.map_polygon.length > 0 && (
+                              <Polygon
+                                pathOptions={{ color: "#2f7a3a" }}
+                                positions={f.map_polygon}
+                              />
+                            )}
+                          <Marker
+                            position={[f.map_center.lat, f.map_center.lng]}
+                          />
+                        </MapContainer>
+                      </div>
+                    )}
+
+                    <hr />
+
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 6 }}>
+                        Crops
+                      </div>
+                      <div>
+                        {f.crops && f.crops.length > 0 ? (
+                          f.crops.map((c, i) => (
+                            <div
+                              key={i}
+                              className="d-flex align-items-center justify-content-between border rounded px-2 py-1 mb-2"
+                            >
+                              <div>
+                                <div
+                                  className="crop-badge"
+                                  style={{
+                                    background:
+                                      cropPalette[i % cropPalette.length],
+                                    boxShadow: "0 4px 12px rgba(10,40,20,0.06)",
+                                  }}
+                                >
+                                  {c.name} · {c.area_acres} ac
+                                </div>
+                                <div className="small-muted">
+                                  Stage: {c.stage}
+                                </div>
+                                <div className="small-muted">
+                                  Harvested: {c.harvested_qty_total || 0} kg
+                                </div>
+                                <div className="small-muted">
+                                  Remaining:{" "}
+                                  {Math.max(
+                                    0,
+                                    (c.area_acres || 0) -
+                                      (c.harvested_area_total || 0)
+                                  ).toFixed(2)}{" "}
+                                  ac
+                                </div>
+                              </div>
+                              <div className="btn-group btn-group-sm">
+                                <button
+                                  className="btn btn-outline-success"
+                                  title="Log partial harvest"
+                                  onClick={() =>
+                                    openHarvestModal(f.id, i, false)
+                                  }
+                                >
+                                  <FaTruckLoading style={{ marginRight: 6 }} />{" "}
+                                  Harvest
+                                </button>
+                                <button
+                                  className="btn btn-outline-secondary"
+                                  title="Mark fully harvested"
+                                  onClick={() =>
+                                    openHarvestModal(f.id, i, true)
+                                  }
+                                >
+                                  Full
+                                </button>
+                                <button
+                                  className="btn btn-outline-info"
+                                  title="View harvest history"
+                                  onClick={() => openHistory(c)}
+                                >
+                                  History
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-muted">No crop data</div>
                         )}
-                        <Marker position={[f.map_center.lat, f.map_center.lng]} />
-                      </MapContainer>
+                      </div>
                     </div>
-                  )}
 
-                  <hr />
+                    <div className="d-flex justify-content-end">
+                      <div className="d-flex flex-wrap gap-2">
+                        <button
+                          className="btn btn-sm btn-outline-success action-btn"
+                          title={
+                            remainingArea > 0
+                              ? "Plan crops for available land"
+                              : "No free area left"
+                          }
+                          disabled={remainingArea <= 0}
+                          onClick={() => {
+                            if (remainingArea <= 0) return;
+                            navigate(`/crop-planning/${routeTarget}`);
+                          }}
+                        >
+                          Crop plan
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-primary me-2 action-btn"
+                          title="Edit field"
+                          onClick={() => openEditModal(f)}
+                        >
+                          <FaEdit />
+                        </button>
 
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 6 }}>Crops</div>
-                    <div>
-                      {f.crops && f.crops.length > 0 ? (
-                        f.crops.map((c, i) => (
-                          <div key={i} className="d-flex align-items-center justify-content-between border rounded px-2 py-1 mb-2">
-                            <div>
-                              <div
-                                className="crop-badge"
-                                style={{
-                                  background: cropPalette[i % cropPalette.length],
-                                  boxShadow: "0 4px 12px rgba(10,40,20,0.06)",
-                                }}
-                              >
-                                {c.name} · {c.area_acres} ac
-                              </div>
-                              <div className="small-muted">Stage: {c.stage}</div>
-                              <div className="small-muted">Harvested: {c.harvested_qty_total || 0} kg</div>
-                              <div className="small-muted">
-                                Remaining: {Math.max(0, (c.area_acres || 0) - (c.harvested_area_total || 0)).toFixed(2)} ac
-                              </div>
-                            </div>
-                            <div className="btn-group btn-group-sm">
-                              <button className="btn btn-outline-success" title="Log partial harvest" onClick={() => openHarvestModal(f.id, i, false)}>
-                                <FaTruckLoading style={{ marginRight: 6 }} /> Harvest
-                              </button>
-                              <button className="btn btn-outline-secondary" title="Mark fully harvested" onClick={() => openHarvestModal(f.id, i, true)}>
-                                Full
-                              </button>
-                              <button className="btn btn-outline-info" title="View harvest history" onClick={() => openHistory(c)}>
-                                History
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-muted">No crop data</div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="d-flex justify-content-end">
-                    <div className="d-flex flex-wrap gap-2">
-                      <button
-                        className="btn btn-sm btn-outline-success action-btn"
-                        title={remainingArea > 0 ? "Plan crops for available land" : "No free area left"}
-                        disabled={remainingArea <= 0}
-                        onClick={() => {
-                          if (remainingArea <= 0) return;
-                          navigate(`/crop-planning/${routeTarget}`);
-                        }}
-                      >
-                        Crop plan
-                      </button>
-                      <button
-                        className="btn btn-sm btn-outline-primary me-2 action-btn"
-                        title="Edit field"
-                        onClick={() => openEditModal(f)}
-                      >
-                        <FaEdit />
-                      </button>
-
-                      <button
-                        className="btn btn-sm btn-outline-warning action-btn"
-                        title="Delete field"
-                        onClick={() => requestDelete(f.id, f.name)}
-                      >
-                        <FaTrash />
-                      </button>
+                        <button
+                          className="btn btn-sm btn-outline-warning action-btn"
+                          title="Delete field"
+                          onClick={() => requestDelete(f)}
+                          disabled={deleting}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
+            );
           })}
         </div>
       </div>
 
       {/* ---------- EDIT / CREATE MODAL ---------- */}
       {editing && editField && (
-        <div className="modal show d-block" tabIndex="-1" role="dialog" style={{ background: "rgba(0,0,0,0.28)" }}>
+        <div
+          className="modal show d-block"
+          tabIndex="-1"
+          role="dialog"
+          style={{ background: "rgba(0,0,0,0.28)" }}
+        >
           <div className="modal-dialog modal-lg" role="document">
             <div className="modal-content">
               <div className="modal-header" style={{ background: "#f7fbf7" }}>
-                <h5 className="modal-title" style={{ color: "#184723" }}>{editField.id ? "Edit Field" : "Add Field"}</h5>
-                <button type="button" className="btn-close" aria-label="Close" onClick={closeEditModal}></button>
+                <h5 className="modal-title" style={{ color: "#184723" }}>
+                  {editField.id ? "Edit Field" : "Add Field"}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Close"
+                  onClick={closeEditModal}
+                ></button>
               </div>
 
               <div className="modal-body">
                 <div className="row g-3">
                   <div className="col-12 col-md-6">
                     <label className="form-label">Field name</label>
-                    <input className="form-control" value={editField.name} onChange={(e) => updateEditField("name", e.target.value)} placeholder="e.g. North Plot" />
+                    <input
+                      className="form-control"
+                      value={editField.name}
+                      onChange={(e) => updateEditField("name", e.target.value)}
+                      placeholder="e.g. North Plot"
+                    />
                   </div>
 
                   <div className="col-6 col-md-3">
@@ -815,7 +1073,9 @@ export default function ManageFields() {
                     <input
                       className="form-control"
                       value={editField.area_acres}
-                      onChange={(e) => updateEditField("area_acres", e.target.value)}
+                      onChange={(e) =>
+                        updateEditField("area_acres", e.target.value)
+                      }
                       placeholder="0.00"
                       type="number"
                       min="0"
@@ -825,7 +1085,11 @@ export default function ManageFields() {
 
                   <div className="col-6 col-md-3">
                     <label className="form-label">Stage</label>
-                    <select className="form-select" value={editField.stage} onChange={(e) => updateEditField("stage", e.target.value)}>
+                    <select
+                      className="form-select"
+                      value={editField.stage}
+                      onChange={(e) => updateEditField("stage", e.target.value)}
+                    >
                       <option>Sowing</option>
                       <option>Growing</option>
                       <option>Flowering</option>
@@ -835,21 +1099,39 @@ export default function ManageFields() {
                   </div>
 
                   <div className="col-12">
-                    <label className="form-label">Crops (name, area, stage, sowing date)</label>
+                    <label className="form-label">
+                      Crops (name, area, stage, sowing date)
+                    </label>
 
                     {editField.crops.map((c, i) => (
                       <div key={i} className="input-group mb-2">
-                        <input className="form-control" placeholder="Crop name" value={c.name} onChange={(e) => updateCrop(i, "name", e.target.value)} />
+                        <input
+                          className="form-control"
+                          placeholder="Crop name"
+                          value={c.name}
+                          onChange={(e) =>
+                            updateCrop(i, "name", e.target.value)
+                          }
+                        />
                         <input
                           className="form-control"
                           placeholder="Area (acres)"
                           type="number"
                           min="0"
                           value={c.area_acres}
-                          onChange={(e) => updateCrop(i, "area_acres", e.target.value)}
+                          onChange={(e) =>
+                            updateCrop(i, "area_acres", e.target.value)
+                          }
                           style={{ maxWidth: 120 }}
                         />
-                        <select className="form-select" style={{ maxWidth: 140 }} value={c.stage || "Growing"} onChange={(e) => updateCrop(i, "stage", e.target.value)}>
+                        <select
+                          className="form-select"
+                          style={{ maxWidth: 140 }}
+                          value={c.stage || "Growing"}
+                          onChange={(e) =>
+                            updateCrop(i, "stage", e.target.value)
+                          }
+                        >
                           <option>Growing</option>
                           <option>Sowing</option>
                           <option>Flowering</option>
@@ -861,30 +1143,56 @@ export default function ManageFields() {
                           className="form-control"
                           style={{ maxWidth: 160 }}
                           value={c.sowing_date || ""}
-                          onChange={(e) => updateCrop(i, "sowing_date", e.target.value)}
+                          onChange={(e) =>
+                            updateCrop(i, "sowing_date", e.target.value)
+                          }
                         />
-                        <button className="btn btn-outline-secondary" onClick={() => removeCropRow(i)} type="button">
+                        <button
+                          className="btn btn-outline-secondary"
+                          onClick={() => removeCropRow(i)}
+                          type="button"
+                        >
                           <FaTimes />
                         </button>
                       </div>
                     ))}
 
                     <div className="mt-2">
-                      <button className="btn btn-sm btn-outline-success" onClick={addCropRow}>
+                      <button
+                        className="btn btn-sm btn-outline-success"
+                        onClick={addCropRow}
+                      >
                         <FaPlus style={{ marginRight: 8 }} /> Add crop
                       </button>
-                      <div className="small-muted mt-2">Track area in acres and set stage per crop. New crops on DB plots create crop cycles.</div>
+                      <div className="small-muted mt-2">
+                        Track area in acres and set stage per crop. New crops on
+                        DB plots create crop cycles.
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="modal-footer">
-                <button className="btn btn-outline-secondary" onClick={closeEditModal} disabled={saving}>
+                <button
+                  className="btn btn-outline-secondary"
+                  onClick={closeEditModal}
+                  disabled={saving}
+                >
                   Cancel
                 </button>
-                <button className="btn btn-success" onClick={saveField} disabled={saving}>
-                  {saving ? "Saving..." : (<><FaSave style={{ marginRight: 8 }} /> Save</>)}
+                <button
+                  className="btn btn-success"
+                  onClick={saveField}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    "Saving..."
+                  ) : (
+                    <>
+                      <FaSave style={{ marginRight: 8 }} /> Save
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -894,21 +1202,46 @@ export default function ManageFields() {
 
       {/* ---------- DELETE CONFIRM ---------- */}
       {deleteConfirm.open && (
-        <div className="modal show d-block" tabIndex="-1" role="dialog" style={{ background: "rgba(0,0,0,0.28)" }}>
+        <div
+          className="modal show d-block"
+          tabIndex="-1"
+          role="dialog"
+          style={{ background: "rgba(0,0,0,0.28)" }}
+        >
           <div className="modal-dialog modal-sm" role="document">
             <div className="modal-content">
               <div className="modal-header" style={{ background: "#fff7ed" }}>
-                <h5 className="modal-title" style={{ color: "#8a5b00" }}>Delete field</h5>
-                <button type="button" className="btn-close" aria-label="Close" onClick={() => setDeleteConfirm({ open: false, id: null, name: "" })}></button>
+                <h5 className="modal-title" style={{ color: "#8a5b00" }}>
+                  Delete field
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Close"
+                  onClick={() =>
+                    setDeleteConfirm({ open: false, id: null, name: "" })
+                  }
+                ></button>
               </div>
               <div className="modal-body">
-                Are you sure you want to delete <strong>{deleteConfirm.name}</strong>?
+                Are you sure you want to delete{" "}
+                <strong>{deleteConfirm.name}</strong>?
               </div>
               <div className="modal-footer">
-                <button className="btn btn-outline-secondary" onClick={() => setDeleteConfirm({ open: false, id: null, name: "" })} disabled={deleting}>
+                <button
+                  className="btn btn-outline-secondary"
+                  onClick={() =>
+                    setDeleteConfirm({ open: false, id: null, name: "" })
+                  }
+                  disabled={deleting}
+                >
                   Cancel
                 </button>
-                <button className="btn btn-warning" onClick={confirmDelete} disabled={deleting}>
+                <button
+                  className="btn btn-warning"
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                >
                   {deleting ? "Deleting..." : "Delete"}
                 </button>
               </div>
@@ -919,17 +1252,33 @@ export default function ManageFields() {
 
       {/* ---------- HARVEST MODAL ---------- */}
       {harvestModal.open && (
-        <div className="modal show d-block" tabIndex="-1" role="dialog" style={{ background: "rgba(0,0,0,0.28)" }}>
+        <div
+          className="modal show d-block"
+          tabIndex="-1"
+          role="dialog"
+          style={{ background: "rgba(0,0,0,0.28)" }}
+        >
           <div className="modal-dialog" role="document">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Log {harvestModal.isFinal ? "Final" : "Partial"} Harvest</h5>
-                <button type="button" className="btn-close" aria-label="Close" onClick={closeHarvestModal}></button>
+                <h5 className="modal-title">
+                  Log {harvestModal.isFinal ? "Final" : "Partial"} Harvest
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Close"
+                  onClick={closeHarvestModal}
+                ></button>
               </div>
               <div className="modal-body">
                 <div className="mb-3">
                   <label className="form-label">Crop</label>
-                  <input className="form-control" value={harvestModal.cropName} readOnly />
+                  <input
+                    className="form-control"
+                    value={harvestModal.cropName}
+                    readOnly
+                  />
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Harvest Date</label>
@@ -937,7 +1286,9 @@ export default function ManageFields() {
                     className="form-control"
                     type="date"
                     value={harvestModal.date}
-                    onChange={(e) => setHarvestModal((p) => ({ ...p, date: e.target.value }))}
+                    onChange={(e) =>
+                      setHarvestModal((p) => ({ ...p, date: e.target.value }))
+                    }
                   />
                 </div>
                 {!harvestModal.isFinal && (
@@ -949,21 +1300,36 @@ export default function ManageFields() {
                         type="number"
                         min="0"
                         value={harvestModal.qty}
-                        onChange={(e) => setHarvestModal((p) => ({ ...p, qty: e.target.value }))}
+                        onChange={(e) =>
+                          setHarvestModal((p) => ({
+                            ...p,
+                            qty: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="mb-3">
                       <label className="form-label">
-                        Area (acres){harvestModal.maxArea !== undefined ? ` (max ${harvestModal.maxArea})` : ""}
+                        Area (acres)
+                        {harvestModal.maxArea !== undefined
+                          ? ` (max ${harvestModal.maxArea})`
+                          : ""}
                       </label>
                       <input
                         className="form-control"
                         type="number"
                         min="0"
                         value={harvestModal.area}
-                        onChange={(e) => setHarvestModal((p) => ({ ...p, area: e.target.value }))}
+                        onChange={(e) =>
+                          setHarvestModal((p) => ({
+                            ...p,
+                            area: e.target.value,
+                          }))
+                        }
                       />
-                      <div className="small-muted mt-1">If blank, remaining area is used.</div>
+                      <div className="small-muted mt-1">
+                        If blank, remaining area is used.
+                      </div>
                     </div>
                   </>
                 )}
@@ -975,14 +1341,26 @@ export default function ManageFields() {
                       type="number"
                       min="0"
                       value={harvestModal.finalYield}
-                      onChange={(e) => setHarvestModal((p) => ({ ...p, finalYield: e.target.value }))}
+                      onChange={(e) =>
+                        setHarvestModal((p) => ({
+                          ...p,
+                          finalYield: e.target.value,
+                        }))
+                      }
                     />
                   </div>
                 )}
               </div>
               <div className="modal-footer">
-                <button className="btn btn-outline-secondary" onClick={closeHarvestModal}>Cancel</button>
-                <button className="btn btn-success" onClick={submitHarvest}>Save</button>
+                <button
+                  className="btn btn-outline-secondary"
+                  onClick={closeHarvestModal}
+                >
+                  Cancel
+                </button>
+                <button className="btn btn-success" onClick={submitHarvest}>
+                  Save
+                </button>
               </div>
             </div>
           </div>
@@ -991,12 +1369,24 @@ export default function ManageFields() {
 
       {/* ---------- HISTORY MODAL ---------- */}
       {historyModal.open && (
-        <div className="modal show d-block" tabIndex="-1" role="dialog" style={{ background: "rgba(0,0,0,0.28)" }}>
+        <div
+          className="modal show d-block"
+          tabIndex="-1"
+          role="dialog"
+          style={{ background: "rgba(0,0,0,0.28)" }}
+        >
           <div className="modal-dialog modal-lg" role="document">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Harvest History - {historyModal.cropName}</h5>
-                <button type="button" className="btn-close" aria-label="Close" onClick={closeHistory}></button>
+                <h5 className="modal-title">
+                  Harvest History - {historyModal.cropName}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Close"
+                  onClick={closeHistory}
+                ></button>
               </div>
               <div className="modal-body">
                 {historyModal.events.length === 0 ? (
@@ -1014,7 +1404,11 @@ export default function ManageFields() {
                       <tbody>
                         {historyModal.events.map((h) => (
                           <tr key={h.id}>
-                            <td>{h.harvested_on ? h.harvested_on.slice(0, 10) : "-"}</td>
+                            <td>
+                              {h.harvested_on
+                                ? h.harvested_on.slice(0, 10)
+                                : "-"}
+                            </td>
                             <td>{h.harvested_qty ?? "-"}</td>
                             <td>{h.harvested_area_acres ?? "-"}</td>
                           </tr>
@@ -1025,7 +1419,12 @@ export default function ManageFields() {
                 )}
               </div>
               <div className="modal-footer">
-                <button className="btn btn-outline-secondary" onClick={closeHistory}>Close</button>
+                <button
+                  className="btn btn-outline-secondary"
+                  onClick={closeHistory}
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

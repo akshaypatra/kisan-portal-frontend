@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   WiDaySunny,
   WiNightClear,
@@ -7,25 +7,46 @@ import {
   WiRain,
   WiThunderstorm,
   WiSnow,
-} from "react-icons/wi";
-import { FiAlertTriangle, FiMapPin, FiRefreshCw, FiSearch } from "react-icons/fi";
+} from 'react-icons/wi';
 
 /**
- * WeatherWidget
- * - Pulls live forecast from Open-Meteo (no API key needed)
- * - Lets farmers change the region (city/district name)
- * - Raises in-app + browser alert pop-up when heavy rain is predicted soon
+ * WeatherMiniWidget.jsx (Google Weather API)
+ *
+ * Uses Google Maps Weather API - forecast.days:
+ *   https://weather.googleapis.com/v1/forecast/days:lookup
+ *
+ * NOTE: For production, DO NOT hardcode your API key in frontend.
+ * Proxy this call via your backend or use a restricted key.
  */
 
+// ⚠️ Dev only: move this key to backend / env variable in real app
+const GOOGLE_WEATHER_API_KEY = 'AIzaSyANvoVWdwZhYshqOhx6dNJR90nrInqfBy8';
+
+// Default: Rourkela, Odisha
+const DEFAULT_LAT = 22.255985;
+const DEFAULT_LNG = 84.8156292;
+
 const IconMap = {
-  Clear: ({ size = 72, color = "#FFD166" }) => <WiDaySunny size={size} color={color} />,
-  "Clear Night": ({ size = 72, color = "#FFD166" }) => <WiNightClear size={size} color={color} />,
-  Sunny: ({ size = 72, color = "#FFD166" }) => <WiDaySunny size={size} color={color} />,
-  "Partly Cloudy": ({ size = 72, color = "#FFE8A1" }) => <WiCloudy size={size} color={color} />,
-  Cloudy: ({ size = 72, color = "#B0C4DE" }) => <WiCloud size={size} color={color} />,
-  Rain: ({ size = 72, color = "#76C7F0" }) => <WiRain size={size} color={color} />,
-  Thunderstorm: ({ size = 72, color = "#9EC5FE" }) => <WiThunderstorm size={size} color={color} />,
-  Snow: ({ size = 72, color = "#BCE5F7" }) => <WiSnow size={size} color={color} />,
+  Clear: ({ size = 72, color = '#FFD166' }) => (
+    <WiDaySunny size={size} color={color} />
+  ),
+  'Clear Night': ({ size = 72, color = '#FFD166' }) => (
+    <WiNightClear size={size} color={color} />
+  ),
+  Sunny: ({ size = 72, color = '#FFD166' }) => (
+    <WiDaySunny size={size} color={color} />
+  ),
+  'Partly Cloudy': ({ size = 72, color = '#FFE8A1' }) => (
+    <WiCloudy size={size} color={color} />
+  ),
+  Cloudy: ({ size = 72, color = '#B0C4DE' }) => (
+    <WiCloud size={size} color={color} />
+  ),
+  Rain: ({ size = 72, color = '#76C7F0' }) => <WiRain size={size} color={color} />,
+  Thunderstorm: ({ size = 72, color = '#9EC5FE' }) => (
+    <WiThunderstorm size={size} color={color} />
+  ),
+  Snow: ({ size = 72, color = '#BCE5F7' }) => <WiSnow size={size} color={color} />,
 };
 
 function getWeatherIcon(condition) {
@@ -88,24 +109,25 @@ const weatherCodeMap = {
 };
 
 const DayPill = ({ day, iconComponent, hi, lo }) => (
-  <div className="day-pill d-flex flex-column align-items-center me-3" style={{ minWidth: 88 }}>
+  <div
+    className="day-pill d-flex flex-column align-items-center me-3"
+    style={{ minWidth: 88 }}
+  >
     <div className="fw-bold small text-white text-center">{day}</div>
     <div className="my-1">{iconComponent}</div>
     <div className="text-white small fw-semibold">
-      {hi}
-      {DEG}C / {lo}
-      {DEG}C
+      {hi}°C / {lo}°C
     </div>
   </div>
 );
 
-export const defaultData = {
-  location: "Rourkela, IN",
-  condition: "Normal",
-  temp: 28,
-  wind: "0 km/h",
-  precip: "0 mm/hr",
-  pressure: "1012 hPa",
+const defaultData = {
+  location: 'Rourkela, IN',
+  condition: 'Clear',
+  temp: 24,
+  wind: '—',
+  precip: '—',
+  pressure: '—',
   days: [
     { d: "SAT", hi: 32, lo: 24, cond: "Partly Cloudy" },
     { d: "SUN", hi: 31, lo: 23, cond: "Cloudy" },
@@ -116,191 +138,163 @@ export const defaultData = {
   ],
 };
 
-function formatLocation(loc) {
-  if (!loc) return "";
-  const region = [loc.name, loc.admin1].filter(Boolean).join(", ");
-  return [region, loc.country].filter(Boolean).join(", ");
-}
+function mapGoogleToWidget(googleData, fallbackLocation = 'Rourkela, IN') {
+  const days = googleData?.forecastDays || [];
+  if (!days.length) return defaultData;
 
-function weatherCodeToCond(code) {
-  return weatherCodeMap[code] || "Cloudy";
-}
+  const first = days[0];
 
-function findRainAlert(apiData) {
-  const hourly = apiData?.hourly;
-  const currentTime = apiData?.current_weather?.time;
-  if (!hourly?.time || !currentTime) return null;
+  // Temperature
+  const max = first.maxTemperature?.degrees ?? null;
+  const feels = first.feelsLikeMaxTemperature?.degrees ?? max ?? 24;
 
-  const now = new Date(currentTime);
-  const horizon = new Date(now.getTime() + 12 * 60 * 60 * 1000); // look 12 hours ahead
+  // Condition text from daytime forecast
+  const condText =
+    first.daytimeForecast?.weatherCondition?.description?.text || 'Clear';
 
-  for (let i = 0; i < hourly.time.length; i++) {
-    const t = new Date(hourly.time[i]);
-    if (t < now || t > horizon) continue;
+  // wind & precip from daytime forecast
+  const windSpeed =
+    first.daytimeForecast?.wind?.speed?.value != null
+      ? `${first.daytimeForecast.wind.speed.value} km/h`
+      : '—';
 
-    const prob = Number(hourly.precipitation_probability?.[i] || 0);
-    const precip = Number(hourly.precipitation?.[i] || 0);
+  const precipQty =
+    first.daytimeForecast?.precipitation?.qpf?.quantity != null
+      ? `${first.daytimeForecast.precipitation.qpf.quantity} mm`
+      : '—';
 
-    if (prob >= ALERT_THRESHOLDS.precipProbability || precip >= ALERT_THRESHOLDS.precipAmount) {
-      return {
-        key: `${hourly.time[i]}-${prob}-${precip}`,
-        time: t,
-        probability: prob,
-        amount: precip,
-        message: `Heavy rain likely around ${t.toLocaleTimeString("en-IN", {
-          hour: "numeric",
-          minute: "2-digit",
-        })} (chance ${prob}%, ~${precip.toFixed(1)} mm/hr)`,
-      };
+  // Build day pills
+  const widgetDays = days.slice(0, 7).map((dObj) => {
+    let label = 'DAY';
+    if (dObj.displayDate) {
+      const { year, month, day } = dObj.displayDate;
+      const dt = new Date(year, month - 1, day);
+      if (!isNaN(dt.getTime())) {
+        label = dt
+          .toLocaleDateString('en-IN', { weekday: 'short' })
+          .toUpperCase();
+      }
     }
-  }
-  return null;
+
+    const hi = dObj.maxTemperature?.degrees ?? 0;
+    const lo = dObj.minTemperature?.degrees ?? 0;
+
+    const cond =
+      dObj.daytimeForecast?.weatherCondition?.description?.text || condText;
+
+    return {
+      d: label,
+      hi: Math.round(hi),
+      lo: Math.round(lo),
+      cond,
+    };
+  });
+
+  return {
+    location: fallbackLocation,
+    condition: condText,
+    temp: Math.round(feels),
+    wind: windSpeed,
+    precip: precipQty,
+    pressure: '—',
+    days: widgetDays,
+  };
 }
 
-export default function WeatherWidget({ initialLocation = DEFAULT_LOCATION }) {
-  const [query, setQuery] = useState(formatLocation(initialLocation) || "Rourkela");
-  const [activeLocation, setActiveLocation] = useState(initialLocation);
+export default function WeatherMiniWidget({
+  // You can override lat/lng if you want another city
+  latitude = DEFAULT_LAT,
+  longitude = DEFAULT_LNG,
+  locationLabel = 'Rourkela, IN',
+}) {
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [alertInfo, setAlertInfo] = useState(null);
-  const [lastAlertKey, setLastAlertKey] = useState(null);
-  const [status, setStatus] = useState("normal");
-
-  const statusColor = useMemo(
-    () => (status === "alert" ? "#b71c1c" : "#1b5e20"),
-    [status]
-  );
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchWeather(activeLocation);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLocation]);
-
-  useEffect(() => {
-    if (alertInfo && alertInfo.key !== lastAlertKey) {
-      setLastAlertKey(alertInfo.key);
-      window.alert(alertInfo.message);
-    }
-  }, [alertInfo, lastAlertKey]);
-
-  async function resolveLocation(searchText) {
-    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-      searchText
-    )}&count=1&language=en&format=json`;
-    const res = await fetch(geoUrl);
-    if (!res.ok) throw new Error("Could not fetch location");
-    const json = await res.json();
-    const match = json?.results?.[0];
-    if (!match) throw new Error("No matching place found");
-    return {
-      name: match.name,
-      admin1: match.admin1,
-      country: match.country_code,
-      latitude: match.latitude,
-      longitude: match.longitude,
-    };
-  }
-
-  async function fetchWeather(location) {
-    if (!location?.latitude || !location?.longitude) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        latitude: location.latitude,
-        longitude: location.longitude,
-        hourly: "precipitation_probability,precipitation,pressure_msl,temperature_2m,wind_speed_10m",
-        daily: "weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
-        current_weather: "true",
-        timezone: "auto",
-      });
-      const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
-      if (!res.ok) throw new Error("Weather data unavailable");
-      const json = await res.json();
-
-      const timeIndex =
-        json.hourly?.time?.findIndex((t) => t === json.current_weather?.time) ?? 0;
-      const safeIndex = timeIndex >= 0 ? timeIndex : 0;
-
-      const widgetData = {
-        location: formatLocation(location) || "--",
-        condition: weatherCodeToCond(json.current_weather?.weathercode),
-        temp: Math.round(json.current_weather?.temperature ?? 0),
-        wind: `${Math.round(json.current_weather?.windspeed ?? 0)} km/h`,
-        precip: `${(json.hourly?.precipitation?.[safeIndex] ?? 0).toFixed(1)} mm/hr`,
-        pressure: `${Math.round(json.hourly?.pressure_msl?.[safeIndex] ?? 0)} hPa`,
-        days: (json.daily?.time || []).slice(0, 6).map((day, idx) => ({
-          d: new Date(day).toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(),
-          hi: Math.round(json.daily?.temperature_2m_max?.[idx] ?? 0),
-          lo: Math.round(json.daily?.temperature_2m_min?.[idx] ?? 0),
-          cond: weatherCodeToCond(json.daily?.weathercode?.[idx]),
-        })),
-      };
-
-      const alert = findRainAlert(json);
-      setStatus(alert ? "alert" : "normal");
-      setAlertInfo(alert);
-      setData(widgetData);
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Something went wrong");
-      setStatus("normal");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function onSearchSubmit(e) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    try {
+    const fetchWeather = async () => {
       setLoading(true);
-      const loc = await resolveLocation(query.trim());
-      setActiveLocation(loc);
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Unable to find that place");
-    } finally {
-      setLoading(false);
-    }
-  }
+      setError('');
+
+      try {
+        const url = `https://weather.googleapis.com/v1/forecast/days:lookup?key=${GOOGLE_WEATHER_API_KEY}&location.latitude=${latitude}&location.longitude=${longitude}&days=7`;
+        const res = await fetch(url);
+
+        if (!res.ok) {
+          throw new Error(`Weather API failed. Status: ${res.status}`);
+        }
+
+        const json = await res.json();
+        const mapped = mapGoogleToWidget(json, locationLabel);
+        setData(mapped);
+      } catch (err) {
+        console.error('Weather API error:', err);
+        setError(err.message || 'Failed to load weather');
+        setData((prev) => ({ ...prev, location: locationLabel }));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWeather();
+  }, [latitude, longitude, locationLabel]);
 
   return (
     <div
       className="weather-mini-widget p-3"
-      style={{ maxWidth: 560, width: "100%", margin: "0 auto" }}
+      style={{ maxWidth: 1000, width: '100%' }}
     >
       <style>{`
-        .wm-card{ background:#59B785; border-radius:12px; padding:12px; color:#fff; border:6px solid rgba(0,0,0,0.06); position:relative; overflow:hidden; }
-        .wm-left{ display:flex; flex-direction:column; align-items:center; gap:8px; }
-        .wm-temp{ font-size:52px; font-weight:700; line-height:1; }
-        .wm-condition{ font-size:20px; font-weight:700; }
-        .wm-metrics{ text-align:center; min-width:160px; width:100%; }
+        .wm-card{
+          background:#59B785;
+          border-radius:12px;
+          padding:20px;
+          color:#fff;
+          border:6px solid rgba(0,0,0,0.06);
+          position:relative;
+        }
+        .wm-left{
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          gap:12px;
+        }
+        .wm-temp{
+          font-size:64px;
+          font-weight:700;
+          line-height:1;
+        }
+        .wm-condition{
+          font-size:20px;
+          font-weight:700;
+        }
+        .wm-metrics{
+          text-align:right;
+          min-width:160px
+        }
         .day-strip{
           display:flex;
           gap:12px;
-          overflow-x:auto;
-          overflow-y:hidden;
-          padding:8px 6px 10px;
-          width:100%;
-          scroll-behavior:smooth;
-          -webkit-overflow-scrolling:touch;
+          overflow:auto;
+          padding-bottom:4px
         }
-        .day-strip::-webkit-scrollbar{ height:6px; }
-        .day-strip::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.35); border-radius:6px; }
-        .day-strip::-webkit-scrollbar-track{ background:rgba(255,255,255,0.12); }
-        .day-pill{ flex:0 0 auto; scroll-snap-align:start; }
-        .wm-status-pill{ background:${statusColor}; padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:6px; text-transform:uppercase; }
-        .wm-search{ background:rgba(255,255,255,0.14); border-radius:10px; padding:10px 12px; border:1px solid rgba(255,255,255,0.35); }
-        .wm-search input{ background:transparent; border:none; outline:none; color:#fff; width:100%; }
-        .wm-search ::placeholder{ color:rgba(255,255,255,0.9); }
-        .wm-alert-banner{ background:rgba(255,193,7,0.18); border:1px dashed rgba(255,255,255,0.6); color:#fff; border-radius:10px; padding:10px 12px; display:flex; gap:10px; align-items:flex-start; }
-        .spin{ animation: spin 1s linear infinite; }
-        @keyframes spin { from{ transform: rotate(0deg); } to{ transform: rotate(360deg); } }
+        .day-pill{ flex:0 0 auto }
+
+        .wm-loading-tag{
+          position:absolute;
+          top:8px;
+          right:12px;
+          font-size:11px;
+          padding:2px 8px;
+          border-radius:999px;
+          background:rgba(255,255,255,0.18);
+        }
 
         /* responsive tweaks */
-        @media (max-width: 900px){ .wm-temp{ font-size:44px } .wm-metrics{ min-width:120px; font-size:14px } }
+        @media (max-width: 900px){
+          .wm-temp{ font-size:48px }
+          .wm-metrics{ min-width:120px; font-size:14px }
+        }
         @media (max-width: 640px){
           .wm-card{ padding:14px }
           .wm-temp{ font-size:34px }
@@ -310,62 +304,19 @@ export default function WeatherWidget({ initialLocation = DEFAULT_LOCATION }) {
         }
       `}</style>
 
-      <div className="wm-card d-flex flex-column align-items-center">
-        <div className="d-flex w-100 align-items-center justify-content-center gap-2 mb-2 flex-wrap">
-          <div className="wm-status-pill text-center">
-            <FiAlertTriangle />
-            Status: {status === "alert" ? "Heavy rain watch" : "Normal"}
-          </div>
-          <form
-            onSubmit={onSearchSubmit}
-            className="d-flex align-items-center gap-2"
-            style={{ flex: "1 1 260px", maxWidth: 420 }}
-          >
-            <div className="wm-search d-flex align-items-center gap-2 w-100">
-              <FiMapPin />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search region (e.g., Rourkela, Odisha)"
-              />
-              <button
-                type="submit"
-                className="btn btn-sm btn-light d-flex align-items-center gap-1"
-                style={{ color: "#2f7a3a", fontWeight: 700 }}
-              >
-                {loading ? <FiRefreshCw className="spin" /> : <FiSearch />}
-                {loading ? "Loading" : "Update"}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {alertInfo && (
-          <div className="wm-alert-banner w-100 mb-3 text-center">
-            <FiAlertTriangle size={20} />
-            <div>
-              <div className="fw-bold">Weather Alert</div>
-              <div className="small">{alertInfo.message}</div>
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="w-100 alert alert-warning py-2 px-3 text-center">
-            {error} - showing last known data.
-          </div>
-        )}
+      <div className="wm-card d-flex flex-wrap align-items-start">
+        {loading && <div className="wm-loading-tag">Loading…</div>}
 
         {/* left icon */}
-        <div className="wm-left align-self-center">
+        <div className="wm-left me-3 align-self-start">
           <div
             style={{
               width: 84,
               height: 84,
               borderRadius: 12,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             {getWeatherIcon(data.condition)}
@@ -403,8 +354,10 @@ export default function WeatherWidget({ initialLocation = DEFAULT_LOCATION }) {
         </div>
 
         {/* right metrics */}
-        <div className="wm-metrics pt-1">
-          <div className="small text-white-50 mb-3">Region-based live feed</div>
+        <div className="wm-metrics ps-3 pt-1">
+          {error && (
+            <div className="small text-warning mb-2">{error}</div>
+          )}
           <div className="small fw-bold">
             Wind: <span className="fw-normal">{data.wind}</span>
           </div>
@@ -413,12 +366,6 @@ export default function WeatherWidget({ initialLocation = DEFAULT_LOCATION }) {
           </div>
           <div className="small fw-bold">
             Pressure: <span className="fw-normal">{data.pressure}</span>
-          </div>
-          <div className="small fw-bold">
-            Status:{" "}
-            <span className="fw-normal" style={{ textTransform: "capitalize" }}>
-              {status}
-            </span>
           </div>
         </div>
       </div>

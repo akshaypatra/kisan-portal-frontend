@@ -75,12 +75,6 @@ export default function Dashboard() {
       color: "#2196F3",
     },
     {
-      name: "News",
-      icon: <FaNewspaper size={32} />,
-      path: "/news",
-      color: "#FF9800",
-    },
-    {
       name: "Sell Crops",
       icon: <FaSeedling size={32} />,
       path: "/sell-crops",

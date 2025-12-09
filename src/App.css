@@ -75,9 +75,122 @@
 }
 
 @media (max-width: 768px) {
-    .AI-advisory-page-container{
+.AI-advisory-page-container{
     padding: 1vh;
 }
 
 
+}
+
+/* Manufacturing insights card */
+.ops-card {
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f5f7ff 0%, #eef2ff 100%);
+  border: 1px solid #e6e9f5;
+}
+
+.ops-section {
+  background: linear-gradient(145deg, #ffffff 0%, #fbfcff 100%);
+  border: 1px solid #e7ebf5;
+  border-radius: 14px;
+  padding: 14px;
+  height: 100%;
+  box-shadow: 0 10px 30px rgba(41, 64, 112, 0.08);
+}
+
+.ops-pill {
+  border-radius: 999px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  background: #ffffff;
+}
+
+.ops-bullet {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: flex-start;
+}
+
+.ops-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.ops-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+}
+
+.ops-note {
+  border-top: 1px dashed #e3e6ef;
+  padding-top: 10px;
+  margin-top: 6px;
+}
+
+.manufacturing-title {
+  letter-spacing: 0.3px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff9800;
+  display: inline-block;
+  box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.6);
+  animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 152, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
+  }
+}
+
+/* Insight alerts */
+.insight-alert {
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #e9ecf4;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 26px rgba(25, 43, 89, 0.08);
+}
+
+.insight-alert.up {
+  border-color: #cce8d8;
+}
+
+.insight-alert.down {
+  border-color: #f3d8da;
+}
+
+.insight-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
 }

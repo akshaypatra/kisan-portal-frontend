@@ -331,10 +331,6 @@ export default function Dashboard() {
   return (
     <div className="dashboard-container p-3">
       <AIAdvisoryBanner />
-      <div className="dashboard-weather-widget-container mb-3">
-        <WeatherWidget />
-      </div>
-
       <div className="dashboard-button-container mb-3">
         <style>
           {`
@@ -433,6 +429,10 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="dashboard-weather-widget-container mb-3">
+        <WeatherWidget />
       </div>
 
       {/* ---------- OVERALL ANALYTICS ---------- */}

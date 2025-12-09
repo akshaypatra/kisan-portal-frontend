@@ -1081,13 +1081,13 @@ const StepRecommendedCrops = ({
                         <div className="small text-muted mb-1">
                           <div className="d-flex justify-content-between">
                             <span>
-                              <FaRupeeSign className="me-1" />
+                              Market price:
                               <span>{crop.price_mandi_estimate}</span>
                             </span>
                           </div>
                           <div className="mt-1">
                             <span className="fw-semibold">Yield:</span>{" "}
-                            {crop.projected_yield_per_acre} /acre
+                            {crop.projected_yield_per_acre}
                             {typeof crop.projected_yield_for_plot !== "undefined" &&
                               ` • ~${crop.projected_yield_for_plot} tons on your plot`}
                           </div>

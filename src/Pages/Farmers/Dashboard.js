@@ -430,9 +430,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="dashboard-weather-widget-container mb-3">
+      {/* <div className="dashboard-weather-widget-container mb-3">
         <WeatherWidget />
-      </div>
+      </div> */}
 
       {/* ---------- OVERALL ANALYTICS ---------- */}
       <div className="analytics-section">

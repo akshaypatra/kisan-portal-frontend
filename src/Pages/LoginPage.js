@@ -9,15 +9,15 @@ export default function LoginPage() {
       id: 'admin',
       label: 'Admin',
       accounts: [
-        {display : 'Seed Seller ',    mobile : '9876543210' , password : 'test123'},
-        {display : 'Farmer      ',    mobile : '9876543211' , password : 'test123'},
-        {display : 'Fpo         ',    mobile : '9876543212' , password : 'test123'},
-        {display : 'Trader      ',    mobile : '9876543213' , password : 'test123'},
-        {display : 'Transport   ',    mobile : '9876543218' , password : 'test123'},
-        {display : 'Storage     ',    mobile : '9876543214' , password : 'test123'},
-        {display : 'Manufacturer',    mobile : '9876543215' , password : 'test123'},
-        {display : 'Retailer    ',    mobile : '9876543216' , password : 'test123'},
-        {display : 'Policy Maker',    mobile : '9876543217' , password : 'test123'}
+        { display: 'Seed Seller', mobile: '9876543210', password: 'test123' },
+        { display: 'Farmer', mobile: '9876543211', password: 'test123' },
+        { display: 'Fpo', mobile: '9876543212', password: 'test123' },
+        { display: 'Trader', mobile: '9876543213', password: 'test123' },
+        { display: 'Transport', mobile: '9876543218', password: 'test123' },
+        { display: 'Storage', mobile: '9876543214', password: 'test123' },
+        { display: 'Manufacturer', mobile: '9876543215', password: 'test123' },
+        { display: 'Retailer', mobile: '9876543216', password: 'test123' },
+        { display: 'Policy Maker', mobile: '9876543217', password: 'test123' }
       ],
     },
     {
@@ -51,19 +51,34 @@ export default function LoginPage() {
   const [activeStakeholder, setActiveStakeholder] = useState(
     stakeholderTabs[0]?.id || ''
   );
+
   const navigate = useNavigate();
 
+  // ✅ FULL MOBILE VALIDATION
   const validateMobile = () => {
-    if (!mobile || mobile.trim().length < 6) {
-      alert('कृपया वैध मोबाइल नंबर दर्ज करें / Please enter a valid mobile number');
+    const cleaned = mobile.trim();
+
+    if (!cleaned) {
+      alert('कृपया मोबाइल नंबर दर्ज करें / Please enter mobile number');
       return false;
     }
+
+    if (!/^\d+$/.test(cleaned)) {
+      alert('मोबाइल नंबर केवल अंक होने चाहिए / Mobile number must contain only digits');
+      return false;
+    }
+
+    if (cleaned.length !== 10) {
+      alert('मोबाइल नंबर 10 अंकों का होना चाहिए / Mobile number must be 10 digits');
+      return false;
+    }
+
     return true;
   };
 
   const handleLogin = async () => {
-    // Validate inputs
     if (!validateMobile()) return;
+
     if (!password || password.trim().length === 0) {
       alert('कृपया पासवर्ड दर्ज करें / Please enter password');
       return;
@@ -71,21 +86,13 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      // Call backend login API
       const data = await authService.login(mobile, password);
 
-      // Backend returns { token, user }
       if (data.token && data.user) {
-        // Store token and user data
         localStorage.setItem('accessToken', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-
-        // alert('लॉगिन सफल / Login successful');
-
-        // Redirect to dashboard router which will route based on role
         navigate('/login-redirect');
       } else {
-        console.warn('Unexpected login response:', data);
         alert('लॉगिन असफल: सर्वर से टोकन नहीं मिला / Login failed: no tokens returned');
       }
     } catch (err) {
@@ -100,11 +107,9 @@ export default function LoginPage() {
     }
   };
 
-  // Handle Enter key
+  // ENTER key support
   const onKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleLogin();
-    }
+    if (e.key === 'Enter') handleLogin();
   };
 
   const fillCredentials = (account) => {
@@ -142,7 +147,13 @@ export default function LoginPage() {
                   <div className="d-flex flex-column flex-sm-row align-items-sm-center gap-2 mb-3">
                     <div className="d-flex gap-2 flex-fill">
                       <button className="btn btn-success flex-fill fw-semibold">Login</button>
-                      <Link to="/signup" className="btn btn-light flex-fill text-success fw-semibold" role="button">Sign Up</Link>
+                      <Link
+                        to="/signup"
+                        className="btn btn-light flex-fill text-success fw-semibold"
+                        role="button"
+                      >
+                        Sign Up
+                      </Link>
                     </div>
                     <button
                       type="button"
@@ -153,7 +164,7 @@ export default function LoginPage() {
                     </button>
                   </div>
 
-                  {/* Mobile input */}
+                  {/* MOBILE INPUT — WITH VALIDATION */}
                   <div className="mb-3">
                     <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
                       <Mail size={18} />
@@ -164,13 +175,17 @@ export default function LoginPage() {
                       className="form-control border-success"
                       placeholder="Enter mobile number"
                       value={mobile}
-                      onChange={(e) => setMobile(e.target.value)}
+                      maxLength={10} // ≤ 10 characters
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^\d*$/.test(value)) setMobile(value); // allow only digits
+                      }}
                       onKeyDown={onKeyDown}
                       aria-label="mobile"
                     />
                   </div>
 
-                  {/* Password input */}
+                  {/* PASSWORD INPUT */}
                   <div className="mb-3">
                     <label className="form-label fw-semibold d-flex align-items-center gap-2 text-success mb-2">
                       <Lock size={18} />
@@ -187,7 +202,6 @@ export default function LoginPage() {
                     />
                   </div>
 
-                  {/* Login button */}
                   <div className="mb-3">
                     <button
                       onClick={handleLogin}
@@ -199,7 +213,7 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Right panel */}
+                {/* RIGHT PANEL */}
                 <div
                   className="col-12 col-lg-5 p-4 d-flex flex-column justify-content-center"
                   style={{
@@ -219,7 +233,7 @@ export default function LoginPage() {
                         }}
                       />
                       <h5 className="mb-0 text-success fw-bold">
-                        Ministry of Agriculture &amp; Farmers Welfare
+                        Ministry of Agriculture & Farmers Welfare
                       </h5>
                     </div>
                     <p className="text-muted small mb-0">कृषि एवं किसान कल्याण मंत्रालय</p>
@@ -230,7 +244,7 @@ export default function LoginPage() {
                   <div className="small text-muted">
                     <p className="mb-1">
                       समस्या? संपर्क करें:{' '}
-                      <a href="#!" className="text-decoration-none">kisan-portal@example.com</a>
+                      <a href="#!" className="text-decoration-none">help@beejnex.com</a>
                     </p>
                     <p className="mb-0">Version: 1.0</p>
                   </div>
@@ -238,10 +252,14 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="text-center mt-3 text-white-50 small">© {new Date().getFullYear()} किसान पोर्टल</div>
+            <div className="text-center mt-3 text-white-50 small">
+              © {new Date().getFullYear()} किसान पोर्टल
+            </div>
           </div>
         </div>
       </div>
+
+      {/* STAKEHOLDER MODAL */}
       {showStakeholderModal && (
         <>
           <div className="modal fade show d-block" tabIndex="-1" role="dialog">
@@ -280,9 +298,9 @@ export default function LoginPage() {
                           <table className="table table-sm align-middle mb-0">
                             <thead>
                               <tr>
-                                <th className="text-nowrap">Name</th>
-                                <th className="text-nowrap">Username / Mobile</th>
-                                <th className="text-nowrap">Password</th>
+                                <th>Name</th>
+                                <th>Username / Mobile</th>
+                                <th>Password</th>
                                 <th className="text-end">Action</th>
                               </tr>
                             </thead>
@@ -290,12 +308,8 @@ export default function LoginPage() {
                               {tab.accounts.map((account, idx) => (
                                 <tr key={`${tab.id}-${idx}`}>
                                   <td className="fw-semibold">{account.display}</td>
-                                  <td>
-                                    <code>{account.mobile}</code>
-                                  </td>
-                                  <td>
-                                    <code>{account.password}</code>
-                                  </td>
+                                  <td><code>{account.mobile}</code></td>
+                                  <td><code>{account.password}</code></td>
                                   <td className="text-end">
                                     <button
                                       type="button"
@@ -307,25 +321,16 @@ export default function LoginPage() {
                                   </td>
                                 </tr>
                               ))}
-                              {tab.accounts.length === 0 && (
-                                <tr>
-                                  <td colSpan="4" className="text-center text-muted small">
-                                    Add stakeholders here
-                                  </td>
-                                </tr>
-                              )}
                             </tbody>
                           </table>
                         </div>
-                        <p className="small text-muted mt-2 mb-0">
-                          Duplicate a row and update mobile/password to add more demo logins.
-                        </p>
                       </div>
                     ))}
                 </div>
               </div>
             </div>
           </div>
+
           <div className="modal-backdrop fade show" />
         </>
       )}

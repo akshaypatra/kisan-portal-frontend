@@ -4,6 +4,7 @@ import { Scanner } from "@yudiel/react-qr-scanner";
 import CONFIG from "../../config";
 import storageService from "../../services/storageService";
 import { useStorage } from "./StorageContext";
+import { GOOGLE_MAPS_LOADER_ID, GOOGLE_MAPS_LIBRARIES } from "../../constants/googleMaps";
 
 const BUCKETS = [
   { label: "0-6h", max: 6 },
@@ -35,9 +36,9 @@ export default function StorageIncomingBoard() {
   const [scanLoading, setScanLoading] = useState(false);
   const [scanInfo, setScanInfo] = useState("");
   const { isLoaded } = useJsApiLoader({
-    id: "storage-google-map-script",
+    id: GOOGLE_MAPS_LOADER_ID,
     googleMapsApiKey: CONFIG.GOOGLE_MAPS_API_KEY || "",
-    libraries: ["places"],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   useEffect(() => {

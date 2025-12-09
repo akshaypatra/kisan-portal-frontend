@@ -7,6 +7,7 @@ import { FaTruckMoving, FaMapMarkedAlt, FaInfoCircle } from "react-icons/fa";
 import { MapContainer, TileLayer, Marker, Circle } from "react-leaflet";
 import { Autocomplete, useJsApiLoader } from "@react-google-maps/api";
 import L from "leaflet";
+import { GOOGLE_MAPS_LOADER_ID, GOOGLE_MAPS_LIBRARIES } from "../../constants/googleMaps";
 
 const markerIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -19,7 +20,6 @@ const markerIcon = new L.Icon({
 
 const DEFAULT_CENTER = { lat: 18.5616, lng: 73.7769 }; // Balewadi depot
 const PLOTS_ENDPOINT = "/api/plots/with-cycles";
-const GOOGLE_LIBRARIES = ["places"];
 
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -93,9 +93,9 @@ export default function BookTransportCard({ farmerId }) {
     shipping_time: "",
   });
   const { isLoaded } = useJsApiLoader({
-    id: "transport-book-map",
+    id: GOOGLE_MAPS_LOADER_ID,
     googleMapsApiKey: CONFIG.GOOGLE_MAPS_API_KEY || "",
-    libraries: GOOGLE_LIBRARIES,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
   const [dropAutocomplete, setDropAutocomplete] = useState(null);
 

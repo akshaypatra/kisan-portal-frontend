@@ -3,6 +3,7 @@ import { FaCrosshairs, FaMapMarkerAlt, FaWarehouse } from "react-icons/fa";
 import { Autocomplete, GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { useStorage } from "./StorageContext";
 import CONFIG from "../../config";
+import { GOOGLE_MAPS_LOADER_ID, GOOGLE_MAPS_LIBRARIES } from "../../constants/googleMaps";
 
 const initialForm = {
   name: "",
@@ -29,8 +30,6 @@ const mapContainerStyle = {
 };
 
 const defaultCenter = { lat: 21.1458, lng: 79.0882 };
-const GOOGLE_LIBRARIES = ["places"];
-const GOOGLE_LOADER_ID = "storage-google-map-script";
 const AUTOCOMPLETE_FIELDS = ["formatted_address", "geometry", "address_components", "name"];
 const MAP_OPTIONS = {
   mapTypeControl: false,
@@ -66,9 +65,9 @@ export default function StorageFacilityForm() {
   const ownerTypeLocked = Boolean(storedUser?.storage_owner_type);
 
   const { isLoaded } = useJsApiLoader({
-    id: GOOGLE_LOADER_ID,
+    id: GOOGLE_MAPS_LOADER_ID,
     googleMapsApiKey: mapsApiKey || undefined,
-    libraries: GOOGLE_LIBRARIES,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
   const [autocomplete, setAutocomplete] = useState(null);
 

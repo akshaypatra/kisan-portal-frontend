@@ -3,8 +3,7 @@ import { FaTruck, FaMapMarkedAlt, FaUsers, FaCheckCircle, FaClock, FaRoute } fro
 import { GoogleMap, LoadScript, Marker, DirectionsRenderer, useJsApiLoader } from '@react-google-maps/api';
 import api from '../../services/api';
 import CONFIG from '../../config';
-
-const libraries = ['places'];
+import { GOOGLE_MAPS_LOADER_ID, GOOGLE_MAPS_LIBRARIES } from '../../constants/googleMaps';
 
 const mapContainerStyle = {
   width: '100%',
@@ -25,8 +24,9 @@ function PoolableRoutesContent({ vehicles }) {
 
   // Load Google Maps
   const { isLoaded } = useJsApiLoader({
+    id: GOOGLE_MAPS_LOADER_ID,
     googleMapsApiKey: CONFIG.GOOGLE_MAPS_API_KEY || "",
-    libraries,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   useEffect(() => {

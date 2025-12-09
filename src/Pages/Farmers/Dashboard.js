@@ -329,9 +329,6 @@ export default function Dashboard() {
   // ---------- RENDER ----------
   return (
     <div className="dashboard-container p-3">
-      <div className="dashboard-weather-widget-container mb-3">
-        <WeatherWidget />
-      </div>
 
       <div className="dashboard-button-container mb-3">
         <style>

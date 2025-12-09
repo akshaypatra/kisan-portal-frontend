@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FaCrosshairs, FaMapMarkerAlt, FaWarehouse } from "react-icons/fa";
-import { Autocomplete, GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { Autocomplete, GoogleMap, Marker, Circle, useJsApiLoader } from "@react-google-maps/api";
 import { useStorage } from "./StorageContext";
 import CONFIG from "../../config";
+import { GOOGLE_MAPS_LOADER_ID, GOOGLE_MAPS_LIBRARIES } from "../../constants/googleMaps";
 
 const initialForm = {
   name: "",
@@ -15,6 +16,7 @@ const initialForm = {
   offloadingSlots: "",
   capacity_t: "",
   storageType: "dry",
+  serviceRadiusKm: "10", // Default 10km service radius
 };
 
 const ownerTypeOptions = [
@@ -29,8 +31,6 @@ const mapContainerStyle = {
 };
 
 const defaultCenter = { lat: 21.1458, lng: 79.0882 };
-const GOOGLE_LIBRARIES = ["places"];
-const GOOGLE_LOADER_ID = "storage-google-map-script";
 const AUTOCOMPLETE_FIELDS = ["formatted_address", "geometry", "address_components", "name"];
 const MAP_OPTIONS = {
   mapTypeControl: false,
@@ -66,9 +66,9 @@ export default function StorageFacilityForm() {
   const ownerTypeLocked = Boolean(storedUser?.storage_owner_type);
 
   const { isLoaded } = useJsApiLoader({
-    id: GOOGLE_LOADER_ID,
+    id: GOOGLE_MAPS_LOADER_ID,
     googleMapsApiKey: mapsApiKey || undefined,
-    libraries: GOOGLE_LIBRARIES,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
   const [autocomplete, setAutocomplete] = useState(null);
 
@@ -323,11 +323,47 @@ export default function StorageFacilityForm() {
                   }}
                   options={MAP_OPTIONS}
                 >
-                  {selectedPosition && <Marker position={selectedPosition} />}
+                  {selectedPosition && (
+                    <>
+                      <Marker position={selectedPosition} />
+                      <Circle
+                        center={selectedPosition}
+                        radius={Number(form.serviceRadiusKm) * 1000} // Convert km to meters
+                        options={{
+                          fillColor: '#28a745',
+                          fillOpacity: 0.2,
+                          strokeColor: '#28a745',
+                          strokeWeight: 2,
+                          strokeOpacity: 0.8,
+                        }}
+                      />
+                    </>
+                  )}
                 </GoogleMap>
               )}
             </div>
             {geoError && <div className="text-danger small mt-1">{geoError}</div>}
+            {selectedPosition && (
+              <div className="mt-2">
+                <label className="form-label small text-muted">
+                  Service Radius: {form.serviceRadiusKm} km
+                </label>
+                <input
+                  type="range"
+                  className="form-range"
+                  min="1"
+                  max="50"
+                  step="1"
+                  name="serviceRadiusKm"
+                  value={form.serviceRadiusKm}
+                  onChange={handleChange}
+                />
+                <div className="d-flex justify-content-between small text-muted">
+                  <span>1 km</span>
+                  <span>50 km</span>
+                </div>
+              </div>
+            )}
           </div>
           <input type="hidden" name="latitude" value={form.latitude} readOnly />
           <input type="hidden" name="longitude" value={form.longitude} readOnly />

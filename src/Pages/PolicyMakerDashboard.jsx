@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaSeedling, FaMapMarkedAlt, FaRobot, FaChartLine } from 'react-icons/fa';
 import authService from '../services/authService';
 import AIAdvisoryBanner from '../Components/Common/AIAdvisoryBanner';
 import indiaMap from '../data/indiaMap';
@@ -238,6 +240,7 @@ const IndiaOilseedHeatmap = () => {
 
 const PolicyMakerDashboard = () => {
   const user = authService.getStoredUser();
+  const navigate = useNavigate();
 
   return (
     <div className="container mt-4">
@@ -257,24 +260,84 @@ const PolicyMakerDashboard = () => {
         <p className="lead mb-0">Role: Policy Maker</p>
       </div>
 
-      <IndiaOilseedHeatmap />
+      {/* Featured Tools */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <h5 className="mb-3">Policy Planning Tools</h5>
+        </div>
 
-      {/* Simple info card */}
-      <div className="card shadow-sm">
-        <div className="card-body">
-          <h5 className="card-title text-success">
-            <i className="bi bi-clipboard-data me-2"></i>
-            Policy Maker Dashboard
-          </h5>
-          <p className="card-text">
-            Your personalized policy maker dashboard is under development. Soon you will be able to:
-          </p>
-          <ul>
-            <li>Monitor system-wide stakeholder metrics</li>
-            <li>Track aggregate production volumes and trends</li>
-            <li>Analyze market price indices and compliance rates</li>
-            <li>Generate reports for policy decisions and regulations</li>
-          </ul>
+        {/* Palm Oil Cluster Planner - Featured Card */}
+        <div className="col-md-6 mb-3">
+          <div
+            className="card shadow-sm h-100 border-success"
+            style={{ borderWidth: '2px', cursor: 'pointer' }}
+            onClick={() => navigate('/palm-oil-cluster-planner')}
+          >
+            <div className="card-body">
+              <div className="d-flex align-items-start mb-3">
+                <div
+                  className="rounded-circle bg-success bg-opacity-10 p-3 me-3"
+                  style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <FaSeedling size={28} className="text-success" />
+                </div>
+                <div className="flex-grow-1">
+                  <h5 className="card-title text-success mb-1">
+                    Palm Oil Cluster Planner
+                    <span className="badge bg-success ms-2" style={{ fontSize: '0.6rem' }}>NEW</span>
+                  </h5>
+                  <p className="text-muted small mb-0">National Oilseed Mission</p>
+                </div>
+              </div>
+
+              <p className="card-text mb-3">
+                AI-powered cluster planning tool for palm oil cultivation under the National Oilseed Mission.
+                Analyze states, identify optimal cluster locations, and generate policy recommendations with ChatGPT-4.
+              </p>
+
+              <div className="d-flex flex-wrap gap-2 mb-3">
+                <span className="badge bg-success bg-opacity-10 text-success">
+                  <FaMapMarkedAlt className="me-1" />
+                  India Map Visualization
+                </span>
+                <span className="badge bg-info bg-opacity-10 text-info">
+                  <FaChartLine className="me-1" />
+                  Satellite Data Analysis
+                </span>
+                <span className="badge bg-primary bg-opacity-10 text-primary">
+                  <FaRobot className="me-1" />
+                  ChatGPT-4 Integration
+                </span>
+              </div>
+
+              <button className="btn btn-success w-100">
+                Launch Cluster Planner
+                <i className="bi bi-arrow-right ms-2"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Coming Soon Card */}
+        <div className="col-md-6 mb-3">
+          <div className="card shadow-sm h-100 border-0">
+            <div className="card-body">
+              <h5 className="card-title text-muted">
+                <i className="bi bi-clipboard-data me-2"></i>
+                Analytics Dashboard
+                <span className="badge bg-secondary ms-2" style={{ fontSize: '0.6rem' }}>COMING SOON</span>
+              </h5>
+              <p className="card-text text-muted">
+                Comprehensive analytics and monitoring tools for policy decisions:
+              </p>
+              <ul className="text-muted">
+                <li>Monitor system-wide stakeholder metrics</li>
+                <li>Track aggregate production volumes and trends</li>
+                <li>Analyze market price indices and compliance rates</li>
+                <li>Generate reports for policy decisions and regulations</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>

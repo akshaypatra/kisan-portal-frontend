@@ -24,6 +24,7 @@ import DashboardRouter from './Pages/DashboardRouter';
 import FPODashboard from './Pages/FPODashboard';
 import TraderDashboard from './Pages/TraderDashboard';
 import StorageDashboard from './Pages/StorageDashboard';
+import RegisterFacility from './Pages/RegisterFacility';
 import ManufacturerDashboard from './Pages/ManufacturingDashboard';
 import RetailerDashboard from './Pages/RetailerDashboard';
 import PolicyMakerDashboard from './Pages/PolicyMakerDashboard';
@@ -35,8 +36,8 @@ import DriverDashboard from './Pages/DriverDashboard';
 import AIAdvisoryPage from './Pages/AI-Advisory/AIAdvisoryPage';
 import FavorableCrops from './Components/AI-advisory-Components/FavorableCrops';
 import PlanCropsAdvisory from './Components/AI-advisory-Components/PlanCropsAdvisory';
-import OilSeedAdvisory from './Components/AI-advisory-Components/OilSeedAdvisory';
-import BuyCropsPage from './Pages/Vendors/BuyCropsPage';
+import NewBookTransportPage from './Pages/Farmers/NewBookTransportPage';
+import PalmOilClusterPlanner from './Pages/PalmOilClusterPlanner';
 
 function App() {
   return (
@@ -59,14 +60,17 @@ function App() {
             <Route path="/fpo-dashboard" element={<FPODashboard />} />
             <Route path="/trader-dashboard" element={<TraderDashboard />} />
             <Route path="/storage-dashboard" element={<StorageDashboard />} />
+            <Route path="/register-facility" element={<RegisterFacility />} />
             <Route path="/transport-dashboard" element={<TransportDashboard />} />
             <Route path="/manufacturer-dashboard" element={<ManufacturerDashboard />} />
             <Route path="/retailer-dashboard" element={<RetailerDashboard />} />
             <Route path="/policy-maker-dashboard" element={<PolicyMakerDashboard />} />
+            <Route path="/palm-oil-cluster-planner" element={<PalmOilClusterPlanner />} />
 
             {/* Other Routes */}
             <Route path="/plot-registration" element={<PlotRegistration />} />
             <Route path="/book-transport" element={<BookTransportPage />} />
+            <Route path="/new-book-transport" element={<NewBookTransportPage />} />
             <Route path="/driver-login" element={<DriverLoginPage />} />
             <Route path="/driver-dashboard" element={<DriverDashboard />} />
             <Route path="/mandi-prices"

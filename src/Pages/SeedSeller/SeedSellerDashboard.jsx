@@ -71,7 +71,7 @@ function TopActions({ active, onChange }) {
       <button className={`btn ${active==='batches' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={()=>onChange('batches')}><FiLayers className="me-1"/> See Batches</button>
       <button className={`btn ${active==='new' ? 'btn-success' : 'btn-outline-success'}`} onClick={()=>onChange('new')}><FiPlusCircle className="me-1"/> Add New Batch</button>
       <button className={`btn ${active==='sell' ? 'btn-warning' : 'btn-outline-warning'}`} onClick={()=>onChange('sell')}><FiShoppingCart className="me-1"/> Sell to Farmer</button>
-      <button className={`btn ${active==='sales' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={()=>onChange('sales')}><FiBarChart2 className="me-1"/> Total Sales</button>
+      {/* <button className={`btn ${active==='sales' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={()=>onChange('sales')}><FiBarChart2 className="me-1"/> Total Sales</button> */}
     </div>
   );
 }
@@ -876,9 +876,9 @@ export default function SeedSellerDashboard() {
           <h3 className="mb-0 text-gradient" style={{background:'linear-gradient(90deg,#6a11cb,#2575fc)', WebkitBackgroundClip:'text', color:'transparent'}}>Seed Seller Dashboard</h3>
           <div className="small text-muted">Colorful, interactive demo UI</div>
         </div>
-        <div className="d-flex gap-2">
+        {/* <div className="d-flex gap-2">
           <div className="badge bg-light text-dark d-flex align-items-center gap-2"><FiUser/> {user?.name}</div>
-        </div>
+        </div> */}
       </div>
       {seedError && <div className="alert alert-warning py-2">{seedError}</div>}
 

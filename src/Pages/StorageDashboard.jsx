@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 import StorageProvider from "../Components/Storage-components/StorageContext";
 import StorageSummaryCards from "../Components/Storage-components/StorageSummaryCards";
@@ -8,13 +9,13 @@ import StorageInventoryBoard from "../Components/Storage-components/StorageInven
 import StorageAlertCenter from "../Components/Storage-components/StorageAlertCenter";
 import StorageTaskPanel from "../Components/Storage-components/StorageTaskPanel";
 import StorageInsights from "../Components/Storage-components/StorageInsights";
-import StorageFacilityForm from "../Components/Storage-components/StorageFacilityForm";
 import StorageIntakeCard from "../Components/Storage-components/StorageIntakeCard";
 import StorageIncomingBoard from "../Components/Storage-components/StorageIncomingBoard";
 import AIAdvisoryBanner from "../Components/Common/AIAdvisoryBanner";
 
 function StorageDashboardView() {
   const user = authService.getStoredUser();
+  const navigate = useNavigate();
 
   return (
     <div className="storage-dashboard container py-4">
@@ -53,34 +54,50 @@ function StorageDashboardView() {
 
       <div className="row g-4 mb-4">
         <div className="col-lg-5">
-          <StorageFacilityForm />
-        </div>
-        <div className="col-lg-7">
-          <div className="card shadow-sm h-100 rounded-4">
-            <div className="card-body">
-              <h5>Why register facilities?</h5>
-              <p className="text-muted mb-3">
-                Onboarded warehouses appear across the value chain, enabling precision routing of
-                harvest lots, real-time utilization tracking, and policy-facing visibility.
-              </p>
-              <ul className="text-muted small mb-0">
-                <li>Unlock farmer self-service booking with validated capacity</li>
-                <li>Feed AI models that forecast congestion and spoilage risk</li>
-                <li>Expose sensor + compliance metadata for traceability</li>
-                <li>Enable incentive payouts tied to turnaround and loss reduction</li>
-              </ul>
+          <div className="card shadow-sm h-100 rounded-4 border-0">
+            <div className="card-body d-flex flex-column justify-content-center align-items-center text-center p-5">
+              <div className="mb-4">
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    background: 'linear-gradient(135deg, #2e7d32, #1b5e20)'
+                  }}
+                >
+                  <span style={{ fontSize: '2.5rem' }}>🏭</span>
+                </div>
+                <h4 className="fw-bold mb-2">Expand Your Network</h4>
+                <p className="text-muted mb-0">
+                  Register new storage facilities to increase capacity and reach
+                </p>
+              </div>
+              <button
+                className="btn btn-lg btn-success px-5 shadow-sm"
+                style={{
+                  background: 'linear-gradient(135deg, #2e7d32, #1b5e20)',
+                  border: 'none'
+                }}
+                onClick={() => navigate('/register-facility')}
+              >
+                <span className="me-2">➕</span>
+                Register Storage Facility
+              </button>
+              <small className="text-muted mt-3">
+                Add warehouses, cold storage, and distribution centers
+              </small>
             </div>
           </div>
+        </div>
+        <div className="col-lg-7">
+          <StorageIntakeCard />
         </div>
       </div>
 
       <StorageSummaryCards />
 
       <div className="row g-4 mb-4">
-        <div className="col-lg-6">
-          <StorageIntakeCard />
-        </div>
-        <div className="col-lg-6">
+        <div className="col-lg-12">
           <StorageIncomingBoard />
         </div>
       </div>

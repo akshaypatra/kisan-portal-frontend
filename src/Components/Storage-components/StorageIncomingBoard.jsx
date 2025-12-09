@@ -4,6 +4,7 @@ import { Scanner } from "@yudiel/react-qr-scanner";
 import CONFIG from "../../config";
 import storageService from "../../services/storageService";
 import { useStorage } from "./StorageContext";
+import { GOOGLE_MAPS_LOADER_ID, GOOGLE_MAPS_LIBRARIES } from "../../constants/googleMaps";
 
 const BUCKETS = [
   { label: "0-6h", max: 6 },
@@ -35,9 +36,9 @@ export default function StorageIncomingBoard() {
   const [scanLoading, setScanLoading] = useState(false);
   const [scanInfo, setScanInfo] = useState("");
   const { isLoaded } = useJsApiLoader({
-    id: "storage-google-map-script",
+    id: GOOGLE_MAPS_LOADER_ID,
     googleMapsApiKey: CONFIG.GOOGLE_MAPS_API_KEY || "",
-    libraries: ["places"],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   useEffect(() => {
@@ -248,11 +249,16 @@ export default function StorageIncomingBoard() {
 
   return (
     <div className="card shadow-sm h-100" style={{ borderRadius: 16 }}>
-      <div className="card-body">
-        <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="card-body p-4">
+        <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h5 className="mb-0">Incoming loads & stress</h5>
-            <small className="text-muted">ETA via Google Distance Matrix</small>
+            <h5 className="mb-1 fw-bold">Incoming Loads & Facility Stress</h5>
+            <small className="text-muted d-flex align-items-center gap-1">
+              <span className="badge bg-primary-subtle text-primary border border-primary" style={{ fontSize: '10px' }}>
+                Live ETA
+              </span>
+              Real-time capacity monitoring via Google Distance Matrix
+            </small>
           </div>
           <div className="d-flex align-items-center gap-2">
             <input
@@ -260,13 +266,14 @@ export default function StorageIncomingBoard() {
               className="form-control form-control-sm"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
+              style={{ maxWidth: '160px' }}
             />
             {selectedDate && (
               <button className="btn btn-sm btn-outline-secondary" onClick={() => setSelectedDate("")}>
                 Clear
               </button>
             )}
-            <button className="btn btn-sm btn-outline-secondary" onClick={loadIncoming} disabled={loading}>
+            <button className="btn btn-sm btn-primary" onClick={loadIncoming} disabled={loading}>
               {loading ? "Refreshing..." : "Refresh"}
             </button>
           </div>
@@ -281,74 +288,138 @@ export default function StorageIncomingBoard() {
           </div>
         )}
 
-        <div className="d-flex flex-column gap-3">
-          {grouped.map(({ facility, buckets, bookings }) => (
-            <div key={facility.id} className="border rounded-3 p-3">
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <div>
-                  <div className="fw-semibold">{facility.name}</div>
-                  <div className="text-muted small">
-                    {facility.city}, {facility.state} · Slots: {facility.offloading_slots}
+        <div className="d-flex flex-column gap-4">
+          {grouped.map(({ facility, buckets, bookings }) => {
+            const totalLoads = buckets.reduce((a, b) => a + b, 0);
+            const utilizationPct = facility.offloading_slots > 0
+              ? ((totalLoads / (facility.offloading_slots * 4)) * 100).toFixed(0)
+              : 0;
+
+            return (
+              <div key={facility.id} className="border rounded-3 p-3 shadow-sm" style={{ backgroundColor: '#fafbfc' }}>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div className="flex-grow-1">
+                    <div className="d-flex align-items-center gap-2">
+                      <h6 className="mb-0 fw-bold">{facility.name}</h6>
+                      <span className={`badge ${utilizationPct > 80 ? 'bg-danger' : utilizationPct > 60 ? 'bg-warning' : 'bg-success'}`}>
+                        {utilizationPct}% utilized
+                      </span>
+                    </div>
+                    <div className="text-muted small mt-1">
+                      <span className="me-3">📍 {facility.city}, {facility.state}</span>
+                      <span className="me-3">🚛 {facility.offloading_slots} offloading slots</span>
+                      <span className="text-primary fw-semibold">{totalLoads} incoming loads</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="d-flex gap-2 mb-3">
-                {BUCKETS.map((b, idx) => (
-                  <div
-                    key={b.label}
-                    className={`px-2 py-1 rounded ${bucketColor(buckets[idx], facility.offloading_slots)}`}
-                    style={{ minWidth: 80 }}
-                  >
-                    <div className="small fw-bold mb-0">{b.label}</div>
-                    <div className="small mb-0">{buckets[idx]} load(s)</div>
-                  </div>
-                ))}
+              {/* Modern slim horizontal capacity strip */}
+              <div className="mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <small className="text-muted fw-semibold">ETA Timeline (24h window)</small>
+                  <small className="text-muted">
+                    {buckets.reduce((a, b) => a + b, 0)} / {facility.offloading_slots * 4} slots
+                  </small>
+                </div>
+                <div className="d-flex gap-1" style={{ height: '32px' }}>
+                  {BUCKETS.map((b, idx) => {
+                    const pct = facility.offloading_slots > 0
+                      ? (buckets[idx] / facility.offloading_slots) * 100
+                      : 0;
+                    let bgColor = '#e9ecef';
+                    let textColor = '#6c757d';
+                    if (pct > 100) { bgColor = '#dc3545'; textColor = '#fff'; }
+                    else if (pct >= 80) { bgColor = '#fd7e14'; textColor = '#fff'; }
+                    else if (pct >= 60) { bgColor = '#ffc107'; textColor = '#000'; }
+                    else if (pct >= 40) { bgColor = '#20c997'; textColor = '#fff'; }
+                    else if (pct > 0) { bgColor = '#0dcaf0'; textColor = '#000'; }
+
+                    return (
+                      <div
+                        key={b.label}
+                        className="flex-fill rounded-2 position-relative d-flex align-items-center justify-content-center"
+                        style={{
+                          backgroundColor: bgColor,
+                          color: textColor,
+                          minHeight: '32px',
+                          transition: 'all 0.2s'
+                        }}
+                        title={`${b.label}: ${buckets[idx]} loads (${pct.toFixed(0)}% capacity)`}
+                      >
+                        <div className="text-center" style={{ fontSize: '11px' }}>
+                          <div className="fw-bold">{b.label}</div>
+                          <div style={{ fontSize: '10px', opacity: 0.9 }}>{buckets[idx]} load{buckets[idx] !== 1 ? 's' : ''}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="d-flex justify-content-between mt-1" style={{ fontSize: '10px', color: '#6c757d' }}>
+                  {BUCKETS.map((b, idx) => (
+                    <div key={`label-${idx}`} className="flex-fill text-center">
+                      {idx === 0 && 'Now'}
+                      {idx === 3 && '+24h'}
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="table-responsive">
-                <table className="table table-sm mb-0 align-middle">
-                  <thead>
+                <table className="table table-sm table-hover mb-0 align-middle" style={{ backgroundColor: 'white' }}>
+                  <thead style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
                     <tr>
-                      <th>ID</th>
-                      <th>Goods</th>
-                      <th>Vehicle</th>
-                      <th>Status</th>
-                      <th>ETA</th>
-                      <th>Intake</th>
+                      <th style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: '600' }}>ID</th>
+                      <th style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: '600' }}>Goods</th>
+                      <th style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: '600' }}>Vehicle</th>
+                      <th style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: '600' }}>Status</th>
+                      <th style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: '600' }}>ETA</th>
+                      <th style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: '600' }}>Intake</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {bookings.map((b) => (
-                      <tr key={b.id}>
-                        <td>#{b.id}</td>
-                        <td className="small">
-                          {Array.isArray(b.goods_details) && b.goods_details.length
-                            ? b.goods_details.map((g) => `${g.name} (${g.quantity})`).join(", ")
-                            : `${b.crop_name || "-"} (${b.quantity || 0})`}
-                        </td>
-                        <td className="small">{b.vehicle_number || "Pending"}</td>
-                        <td>
-                          <span className="badge bg-light text-dark">{b.status}</span>
-                        </td>
-                        <td className="small">
-                          {b.arrivalTs
-                            ? `${new Date(b.arrivalTs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} (${Math.max(
-                                0,
-                                b.deltaHours || 0
-                              ).toFixed(1)}h)`
-                            : b.shipping_time || "Unknown"}
-                        </td>
-                        <td>
-                          <button className="btn btn-sm btn-outline-success" onClick={() => openScan(b.id)}>
-                            Scan QR
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {bookings.map((b) => {
+                      const isUrgent = b.deltaHours !== null && b.deltaHours < 2;
+                      return (
+                        <tr key={b.id} style={isUrgent ? { backgroundColor: '#fff3cd' } : {}}>
+                          <td className="fw-semibold" style={{ fontSize: '12px' }}>#{b.id}</td>
+                          <td style={{ fontSize: '12px' }}>
+                            {Array.isArray(b.goods_details) && b.goods_details.length
+                              ? b.goods_details.map((g) => `${g.name} (${g.quantity})`).join(", ")
+                              : `${b.crop_name || "-"} (${b.quantity || 0})`}
+                          </td>
+                          <td style={{ fontSize: '12px' }}>
+                            <span className="badge bg-secondary">{b.vehicle?.vehicle_number || "Pending"}</span>
+                          </td>
+                          <td>
+                            <span className="badge bg-success">{b.status}</span>
+                          </td>
+                          <td style={{ fontSize: '12px' }}>
+                            {b.arrivalTs ? (
+                              <div>
+                                <div className="fw-semibold">
+                                  {new Date(b.arrivalTs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </div>
+                                <div className="text-muted" style={{ fontSize: '10px' }}>
+                                  {isUrgent ? '⚡ ' : ''}
+                                  {Math.max(0, b.deltaHours || 0).toFixed(1)}h away
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-muted">{b.shipping_time || "Unknown"}</span>
+                            )}
+                          </td>
+                          <td>
+                            <button className="btn btn-sm btn-outline-success" onClick={() => openScan(b.id)}>
+                              📷 Scan
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       </div>
       {scanModal && (

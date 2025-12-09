@@ -8,8 +8,7 @@ import {
   DirectionsRenderer,
 } from "@react-google-maps/api";
 import CONFIG from "../../config";
-
-const libraries = ["places"];
+import { GOOGLE_MAPS_LOADER_ID, GOOGLE_MAPS_LIBRARIES } from "../../constants/googleMaps";
 
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -217,8 +216,9 @@ export default function TransportRequestsBoard({ vehicles }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const { isLoaded } = useJsApiLoader({
+    id: GOOGLE_MAPS_LOADER_ID,
     googleMapsApiKey: CONFIG.GOOGLE_MAPS_API_KEY || "",
-    libraries,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   const load = async () => {

@@ -41,13 +41,13 @@
     
     display: flex;
     gap: 16vh;
-    margin-top: 40vh;
+    margin-top: 28vh;
 }
 
 .home-page-lower-container div{
     background-color: rgba(212, 253, 183, 0.783);
     padding: 20px;
-    height: 25vh;
+    height: 35vh;
     text-align: center;
     width: 40vh;
     border-radius: 30px;

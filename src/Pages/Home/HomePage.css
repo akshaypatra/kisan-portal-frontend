@@ -1,137 +1,161 @@
-.home-page-container{
-    /* background image for home page */
+/* Make rem-based scaling predictable */
+html {
+  font-size: 16px; /* base: 1rem = 16px */
+}
 
-    background-image:url("/public/IMAGES/home-page-background.jpeg");
-    background-size: cover;
-    background-position: center;
-    height:100vh;
-    width:100%;
-    display: flex;
+/* CONTAINER */
+.home-page-container {
+  background-image: url("/public/IMAGES/home-page-background.jpeg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+
+  box-sizing: border-box;
+}
+
+/* HEADER */
+.home-page-header {
+  width: 100%;
+  padding: 2rem 1rem;
+  color: rgb(24, 167, 24);
+  text-align: center;
+  background-color: rgba(212, 253, 183, 0.783);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.home-page-header h1 {
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  color: green;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.home-page-header h3 {
+  font-size: clamp(1.1rem, 2.5vw, 2rem);
+}
+
+/* LOGO SCALES WITH FONT */
+#beejnex-logo {
+  height: clamp(3rem, 8vw, 5rem);
+  width: clamp(3rem, 8vw, 5rem);
+}
+
+/* GET STARTED BUTTON */
+.home-getstarted-container {
+  padding-top: 1.5rem;
+}
+
+.home-getstarted-container button {
+  border: 0.25rem solid green;
+  border-radius: 1rem;
+  font-size: clamp(0.9rem, 1.6vw, 1.25rem);
+  color: green;
+  background-color: rgb(175, 224, 175);
+  padding: 0.75rem 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.home-getstarted-container button:hover {
+  background-color: rgb(24, 167, 24);
+  color: white;
+  cursor: pointer;
+}
+
+/* LOWER FEATURES SECTION – NO VH GAPS, REM-BASED */
+.home-page-lower-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3rem;
+  margin-top: 6rem;
+  width: 100%;
+  max-width: 68.75rem; /* 1100px */
+}
+
+.home-page-lower-container div {
+  background-color: rgba(212, 253, 183, 0.783);
+  padding: 1.25rem;
+  text-align: center;
+  width: min(20rem, 85vw);  /* scales with zoom */
+  border-radius: 1.875rem;  /* 30px */
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.home-page-lower-container div h4 {
+  font-weight: 650;
+  font-size: clamp(1.3rem, 2.2vw, 2rem);
+  color: green;
+  margin-bottom: 0.6rem;
+}
+
+.home-page-lower-container div p {
+  padding: 0.6rem;
+  font-size: clamp(0.95rem, 1.4vw, 1.2rem);
+  line-height: 1.4;
+}
+
+/* TABLET */
+@media (max-width: 1024px) {
+  
+
+  .home-page-lower-container {
+    margin-top: 4rem;
+    gap: 2.5rem;
+  }
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .home-page-header {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .home-getstarted-container {
+    padding-top: 1.25rem;
+  }
+
+  .home-page-lower-container {
     flex-direction: column;
     align-items: center;
+    margin-top: 3.5rem;
+    gap: 2rem;
+  }
 
+  .home-page-lower-container div {
+    width: 90vw;
+  }
 }
 
-.home-page-header{
-    width: 100%;
-    height: 20%;
-    
-    padding: 40px;
-    color: rgb(24, 167, 24);
+/* EXTRA SMALL MOBILE */
+@media (max-width: 480px) {
+  .home-page-header h1 {
     text-align: center;
-    background-color: rgba(212, 253, 183, 0.783)
-    /* background: linear-gradient(
-    to bottom,
-    rgba(240, 248, 255, 0.983),   /* darker at the top */
-    /* rgba(240, 248, 255, 0)    /* lighter at the bottom */
+  }
+
+  .home-page-header h3 {
+    max-width: 90%;
+  }
+
+  .home-getstarted-container button {
+    width: auto;
+  }
 }
-
-.home-page-header h1{
-    font-size: 80px;
-    color: green;
-    font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-    font-weight: 500;
-}
-
-.home-page-header h3{
-    font-size: 40px ;
-}
-
-.home-page-lower-container{
-    
-    display: flex;
-    gap: 16vh;
-    margin-top: 28vh;
-}
-
-.home-page-lower-container div{
-    background-color: rgba(212, 253, 183, 0.783);
-    padding: 20px;
-    height: 35vh;
-    text-align: center;
-    width: 40vh;
-    border-radius: 30px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.home-page-lower-container div h4{
-    font-weight: 650;
-    font-size: 35px;
-    color: green;
-    margin-bottom: 10px;
-}
-.home-page-lower-container div p{
-    padding: 10px;
-    font-size:20px;
-}
-
-#beejnex-logo{
-    height: 80px;
-    width: 80px;
-}
-
-.home-getstarted-container{
-    padding-top:40px;
-}
-.home-getstarted-container button{
-    border: 4px green solid;
-    border-radius: 15px;    
-    font-size: 20px;
-    color: green;
-    background-color: rgb(175, 224, 175);
-    padding: 15px;
-}
-.home-getstarted-container button:hover{
-    background-color: rgb(24, 167, 24);
-    color: white;
-    cursor: pointer;
-}
-
-@media  (max-width: 768px) {
-    .home-page-header h1{
-        font-size: 50px;
-    }
-
-    .home-page-header h3{
-        font-size: 20px ;
-    }
-    #beejnex-logo{
-    height: 60px;
-    width: 60px;
-    }
-    .home-page-lower-container{
-        display: flex;
-        flex-direction: column;
-        overflow: scroll;
-        gap:10vh;
-        padding-bottom:50px;
-    }
-
-    .home-page-lower-container div{
-        padding: 20px;
-        gap:1vh;
-        height: 60vh;
-        width: 40vh;
-        border-radius: 30px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .home-page-lower-container div h4{
-        font-weight: 650;
-        font-size: 35px;
-        color: green;
-        margin-bottom: 10px;
-    }
-    .home-page-lower-container div p{
-        padding: 10px;
-        font-size:20px;
-        overflow: scroll;
-    }
-    .home-getstarted-container button{
-        font-size: 15px;
-        padding: 10px;
-    }
-
-
-}
-    

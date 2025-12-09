@@ -66,7 +66,7 @@ export default function FactoryMap({ factory, storageLocations = [] }) {
           </div>
           {factory && (
             <div className="text-end">
-              <div className="badge bg-success">{factory.procurement_radius_km} km radius</div>
+              <div className="badge bg-success">100 km radius</div>
             </div>
           )}
         </div>
@@ -92,13 +92,13 @@ export default function FactoryMap({ factory, storageLocations = [] }) {
                 }}
               />
 
-              {/* Procurement Radius Circle */}
+              {/* Procurement Radius Circle - Fixed at 100 km */}
               <Circle
                 center={{
                   lat: parseFloat(factory.latitude),
                   lng: parseFloat(factory.longitude),
                 }}
-                radius={factory.procurement_radius_km * 1000} // Convert km to meters
+                radius={100 * 1000} // 100 km converted to meters
                 options={{
                   strokeColor: "#4CAF50",
                   strokeOpacity: 0.8,
@@ -158,7 +158,7 @@ export default function FactoryMap({ factory, storageLocations = [] }) {
         {storageLocations.length > 0 && (
           <div className="alert alert-info mt-3 py-2">
             <i className="bi bi-info-circle me-2"></i>
-            <strong>{storageLocations.length} storage facilities</strong> found within your {factory?.procurement_radius_km}km
+            <strong>{storageLocations.length} storage facilities</strong> found within your 100 km
             procurement radius with available stock.
           </div>
         )}

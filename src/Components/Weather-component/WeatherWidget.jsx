@@ -121,13 +121,13 @@ const DayPill = ({ day, iconComponent, hi, lo }) => (
   </div>
 );
 
-const defaultData = {
+export const defaultData = {
   location: 'Rourkela, IN',
-  condition: 'Clear',
-  temp: 24,
-  wind: '—',
-  precip: '—',
-  pressure: '—',
+  condition: 'Clear Sky',
+  temp: 15,
+  wind: '0 m/s',
+  precip: '0 mm/hr',
+  pressure: '1018 mb',
   days: [
     { d: "SAT", hi: 32, lo: 24, cond: "Partly Cloudy" },
     { d: "SUN", hi: 31, lo: 23, cond: "Cloudy" },

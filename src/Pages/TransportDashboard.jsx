@@ -4,10 +4,13 @@ import VehicleRegistrationForm from "../Components/Transport/VehicleRegistration
 import VehicleList from "../Components/Transport/VehicleList";
 import TransportRequestsBoard from "../Components/Transport/TransportRequestsBoard";
 import TransportBookingScanner from "../Components/Transport/TransportBookingScanner";
+import PoolableRoutesWithNavigation from "../Components/Transport/PoolableRoutesWithNavigation";
+import AcceptedPools from "../Components/Transport/AcceptedPools";
 import AIAdvisoryBanner from "../Components/Common/AIAdvisoryBanner";
 
 function TransportDashboardView() {
   const { vehicles } = useTransport();
+
   return (
     <div className="container py-4">
       <AIAdvisoryBanner />
@@ -52,7 +55,21 @@ function TransportDashboardView() {
           <TransportBookingScanner />
         </div>
       </div>
-      <TransportRequestsBoard vehicles={vehicles} />
+
+      {/* Accepted Pool Bookings */}
+      <div className="mt-4">
+        <AcceptedPools vehicles={vehicles} />
+      </div>
+
+      {/* Poolable Routes Section */}
+      <div className="mt-4">
+        <PoolableRoutesWithNavigation vehicles={vehicles} />
+      </div>
+
+      {/* Regular Transport Requests */}
+      <div className="mt-4">
+        <TransportRequestsBoard vehicles={vehicles} />
+      </div>
     </div>
   );
 }

@@ -160,25 +160,80 @@ export default function CropsPage() {
     );
   });
 
-  // small helper: placeholder tile with initials
   function PlaceholderTile({ name }) {
-    const initials = name
-      .split(" ")
-      .slice(0, 2)
-      .map((s) => s[0])
-      .join("")
-      .toUpperCase();
-    const colors = ["#E9F6EC", "#FFF4E6", "#F6F6FF", "#FFF0F0", "#F0FBFF"];
-    const bg = colors[name.length % colors.length];
-    const fg = "#2b7a36";
-    return (
-      <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", background: bg, borderBottom: "1px solid rgba(0,0,0,0.03)" }}>
-        <div style={{ width: 80, height: 80, borderRadius: 12, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: fg, boxShadow: "0 6px 16px rgba(10,30,10,0.04)" }}>
-          {initials}
-        </div>
+  const initials = name
+    .split(" ")
+    .slice(0, 2)
+    .map((s) => s[0])
+    .join("")
+    .toUpperCase();
+  const colors = ["#E9F6EC", "#FFF4E6", "#F6F6FF", "#FFF0F0", "#F0FBFF"];
+  const bg = colors[name.length % colors.length];
+  const fg = "#2b7a36";
+  return (
+    <div
+      style={{
+        height: 160,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: bg,
+        borderBottom: "1px solid rgba(0,0,0,0.03)",
+      }}
+    >
+      <div
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 12,
+          background: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontWeight: 800,
+          color: fg,
+          boxShadow: "0 6px 16px rgba(10,30,10,0.04)",
+        }}
+      >
+        {initials}
       </div>
-    );
+    </div>
+  );
+}
+
+function CropImage({ crop }) {
+  const [error, setError] = useState(false);
+
+  if (error) {
+    // fallback if image not found
+    return <PlaceholderTile name={crop.name} />;
   }
+
+  return (
+    <div
+      style={{
+        height: 160,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#E9F6EC",
+        borderBottom: "1px solid rgba(0,0,0,0.03)",
+      }}
+    >
+      <img
+        src={`/IMAGES/crops/${crop.id}.png`}   // ⬅️ important: no "public" in path
+        alt={crop.name}
+        style={{
+          maxHeight: "100%",
+          maxWidth: "100%",
+          objectFit: "cover",
+        }}
+        onError={() => setError(true)}
+      />
+    </div>
+  );
+}
+
 
   return (
     <div className="container py-4">
@@ -219,7 +274,8 @@ export default function CropsPage() {
         {filtered.map((c) => (
           <div key={c.id} className="col-12 col-md-6 col-lg-4">
             <div className="crop-card card h-100">
-              <PlaceholderTile name={c.name} />
+              <CropImage crop={c} />
+
               <div className="card-body d-flex flex-column">
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
@@ -269,7 +325,8 @@ export default function CropsPage() {
               <div className="modal-body">
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <PlaceholderTile name={selected.name} />
+                    <CropImage crop={selected} />
+
                   </div>
 
                   <div className="col-md-6">

@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
+//eslint-disable-next-line no-unused-vars
 import WeatherWidget from "../../Components/Weather-component/WeatherWidget";
 import { useNavigate } from "react-router-dom";
 import {
   FaSeedling,
+  //eslint-disable-next-line no-unused-vars
   FaNewspaper,
   FaStore,
   FaChartLine,
@@ -63,9 +65,9 @@ export default function Dashboard() {
 
   const buttons = [
     {
-      name: "Mandi Prices",
+      name: "AI Advisory",
       icon: <FaChartLine size={32} />,
-      path: "/mandi-prices",
+      path: "/ai-advisory",
       color: "#4CAF50",
     },
     {

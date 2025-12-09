@@ -11,6 +11,7 @@ const Navbar = () => {
   const closeMenu = () => setMenuOpen(false);
 
   const isAuthenticated = authService.isAuthenticated();
+  //eslint-disable-next-line no-unused-vars
   const user = authService.getStoredUser();
 
   const handleLogout = () => {
@@ -66,7 +67,7 @@ const Navbar = () => {
               </Link>
             </li>
 
-            <li className="nav-item">
+            {/* <li className="nav-item">
               <Link
                 className="nav-link fs-5"
                 to="/profile"
@@ -74,9 +75,9 @@ const Navbar = () => {
               >
                 Profile
               </Link>
-            </li>
+            </li> */}
 
-            <li className="nav-item">
+            {/* <li className="nav-item">
               <Link
                 className="nav-link fs-5"
                 to="/ai-advisory"
@@ -84,7 +85,7 @@ const Navbar = () => {
               >
                 AI Advisory
               </Link>
-            </li>
+            </li> */}
 
             {!isAuthenticated ? (
               <li className="nav-item">
@@ -98,11 +99,11 @@ const Navbar = () => {
               </li>
             ) : (
               <>
-                <li className="nav-item d-flex align-items-center justify-content-center justify-content-lg-start">
+                {/* <li className="nav-item d-flex align-items-center justify-content-center justify-content-lg-start">
                   <span className="nav-link fs-6 text-white-50 mb-0">
-                    {user?.name || "User"}
+                    User : {user?.name || "User"}
                   </span>
-                </li>
+                </li> */}
                 <li className="nav-item">
                   <button
                     className="btn btn-outline-light btn-sm ms-lg-2 mt-2 mt-lg-0"

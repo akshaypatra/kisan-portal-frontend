@@ -19,7 +19,6 @@ import CropsPage from './Pages/Farmers/CropsPage';
 import FarmerProfile from './Components/Profile-component/FarmerProfile';
 import FarmersProfileEditForm from './Components/Profile-component/FarmerProfileEditForm';
 import SellCropsPage from './Components/SellCrops-component/SellCropsPage';
-import FarmersListingPage from './Pages/Vendors/FamersListingPage';
 import SeedSellerDashboard from './Pages/SeedSeller/SeedSellerDashboard';
 import DashboardRouter from './Pages/DashboardRouter';
 import FPODashboard from './Pages/FPODashboard';
@@ -37,6 +36,7 @@ import AIAdvisoryPage from './Pages/AI-Advisory/AIAdvisoryPage';
 import FavorableCrops from './Components/AI-advisory-Components/FavorableCrops';
 import PlanCropsAdvisory from './Components/AI-advisory-Components/PlanCropsAdvisory';
 import OilSeedAdvisory from './Components/AI-advisory-Components/OilSeedAdvisory';
+import BuyCropsPage from './Pages/Vendors/BuyCropsPage';
 
 function App() {
   return (
@@ -82,7 +82,7 @@ function App() {
             <Route path="/profile" element={<FarmerProfile/>} />
             <Route path="/edit-profile" element={<FarmersProfileEditForm/>} />
             <Route path="/sell-crops" element={<SellCropsPage/>} />
-            <Route path="/buy-crops" element={<FarmersListingPage/>}/>
+            <Route path="/buy-crops" element={<BuyCropsPage/>}/>
             <Route path="/crop-planning/:plotId" element={<CropPlanning />} />
             <Route path='/advisory/crop-recommendation' element={<FavorableCrops/>}/>
             <Route path='/advisory/plan-crops' element={<PlanCropsAdvisory/>}/>

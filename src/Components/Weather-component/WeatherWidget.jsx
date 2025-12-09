@@ -52,15 +52,61 @@ const IconMap = {
 function getWeatherIcon(condition) {
   if (!condition) return IconMap.Cloudy({});
   const c = condition.toLowerCase();
-  if (c.includes('clear') && c.includes('night')) return IconMap['Clear Night']({});
-  if (c.includes('clear') || c.includes('sunny')) return IconMap.Sunny({});
-  if (c.includes('cloud') && c.includes('part')) return IconMap['Partly Cloudy']({});
-  if (c.includes('cloud')) return IconMap.Cloudy({});
-  if (c.includes('rain') || c.includes('shower')) return IconMap.Rain({});
-  if (c.includes('thunder')) return IconMap.Thunderstorm({});
-  if (c.includes('snow')) return IconMap.Snow({});
+  if (c.includes("clear") && c.includes("night")) return IconMap["Clear Night"]({});
+  if (c.includes("clear") || c.includes("sunny")) return IconMap.Sunny({});
+  if (c.includes("cloud") && c.includes("part")) return IconMap["Partly Cloudy"]({});
+  if (c.includes("cloud")) return IconMap.Cloudy({});
+  if (c.includes("rain") || c.includes("shower")) return IconMap.Rain({});
+  if (c.includes("thunder")) return IconMap.Thunderstorm({});
+  if (c.includes("snow")) return IconMap.Snow({});
   return IconMap.Cloudy({});
 }
+
+const DEG = "\u00b0";
+
+const DEFAULT_LOCATION = {
+  name: "Rourkela",
+  admin1: "Odisha",
+  country: "IN",
+  latitude: 22.237,
+  longitude: 84.864,
+};
+
+const ALERT_THRESHOLDS = {
+  precipProbability: 70, // %
+  precipAmount: 8, // mm/hr
+};
+
+const weatherCodeMap = {
+  0: "Clear",
+  1: "Mainly Clear",
+  2: "Partly Cloudy",
+  3: "Cloudy",
+  45: "Fog",
+  48: "Fog",
+  51: "Light Drizzle",
+  53: "Drizzle",
+  55: "Heavy Drizzle",
+  56: "Freezing Drizzle",
+  57: "Freezing Drizzle",
+  61: "Light Rain",
+  63: "Rain",
+  65: "Heavy Rain",
+  66: "Freezing Rain",
+  67: "Freezing Rain",
+  71: "Snow",
+  73: "Snow",
+  75: "Heavy Snow",
+  77: "Snow Grains",
+  80: "Rain Showers",
+  81: "Rain Showers",
+  82: "Heavy Showers",
+  85: "Snow Showers",
+  86: "Snow Showers",
+  95: "Thunderstorm",
+  96: "Thunderstorm",
+  99: "Thunderstorm",
+};
 
 const DayPill = ({ day, iconComponent, hi, lo }) => (
   <div
@@ -83,12 +129,12 @@ const defaultData = {
   precip: '—',
   pressure: '—',
   days: [
-    { d: 'SAT', hi: 26, lo: 12, cond: 'Partly Cloudy' },
-    { d: 'SUN', hi: 26, lo: 11, cond: 'Partly Cloudy' },
-    { d: 'MON', hi: 26, lo: 11, cond: 'Partly Cloudy' },
-    { d: 'TUE', hi: 25, lo: 10, cond: 'Partly Cloudy' },
-    { d: 'WED', hi: 25, lo: 10, cond: 'Partly Cloudy' },
-    { d: 'THU', hi: 25, lo: 10, cond: 'Partly Cloudy' },
+    { d: "SAT", hi: 32, lo: 24, cond: "Partly Cloudy" },
+    { d: "SUN", hi: 31, lo: 23, cond: "Cloudy" },
+    { d: "MON", hi: 30, lo: 22, cond: "Cloudy" },
+    { d: "TUE", hi: 29, lo: 22, cond: "Cloudy" },
+    { d: "WED", hi: 29, lo: 21, cond: "Partly Cloudy" },
+    { d: "THU", hi: 30, lo: 22, cond: "Partly Cloudy" },
   ],
 };
 
@@ -251,7 +297,7 @@ export default function WeatherMiniWidget({
         }
         @media (max-width: 640px){
           .wm-card{ padding:14px }
-          .wm-temp{ font-size:36px }
+          .wm-temp{ font-size:34px }
           .wm-left{ order:0 }
           .wm-metrics{ order:2; text-align:left; margin-top:10px }
           .day-strip{ gap:10px }
@@ -276,18 +322,22 @@ export default function WeatherMiniWidget({
             {getWeatherIcon(data.condition)}
           </div>
           <div className="wm-condition">{data.condition}</div>
+          <div className="small text-white-50">Updated for {data.location}</div>
         </div>
 
         {/* center block */}
-        <div style={{ flex: '1 1 360px', minWidth: 220 }} className="px-2">
+        <div style={{ flex: "1 1 360px", minWidth: 220 }} className="px-2 text-center">
           <div className="text-center mb-1">
             <div className="fw-bold" style={{ fontSize: 22 }}>
               {data.location}
             </div>
           </div>
 
-          <div className="d-flex align-items-center justify-content-center mb-2">
-            <div className="wm-temp">{data.temp}°C</div>
+      <div className="d-flex align-items-center justify-content-center mb-2">
+            <div className="wm-temp">
+              {data.temp}
+              {DEG}C
+            </div>
           </div>
 
           <div className="day-strip mt-2">

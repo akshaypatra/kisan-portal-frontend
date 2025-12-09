@@ -8,6 +8,9 @@ import ProductionEntryForm from "../Components/Manufacturing/ProductionEntryForm
 import RegisterFacility from "../Components/Manufacturing/RegisterFacility";
 import FactoryMap from "../Components/Manufacturing/FactoryMap";
 import OverviewDashboard from "../Components/Manufacturing/OverviewDashboard";
+import OperationsInsightsCard from "../Components/Manufacturing/OperationsInsightsCard";
+import InsightAlerts from "../Components/Manufacturing/InsightAlerts";
+import { useRef } from "react";
 
 export default function ManufacturingDashboard() {
   const navigate = useNavigate();
@@ -20,6 +23,8 @@ export default function ManufacturingDashboard() {
   const [inventoryData, setInventoryData] = useState([]);
   const [incomingData, setIncomingData] = useState([]);
   const [activeTab, setActiveTab] = useState("procurement");
+  const [alerts, setAlerts] = useState([]);
+  const previousSnapshot = useRef(null);
 
   useEffect(() => {
     loadFacilities();
@@ -30,6 +35,12 @@ export default function ManufacturingDashboard() {
       loadProductionStats();
     }
   }, [selectedFacility, selectedPeriod]);
+
+  // Reset alerts and previous snapshot when switching facilities
+  useEffect(() => {
+    previousSnapshot.current = null;
+    setAlerts([]);
+  }, [selectedFacility]);
 
   const loadFacilities = async () => {
     setLoading(true);
@@ -75,6 +86,118 @@ export default function ManufacturingDashboard() {
   const procurementTotal = procurementData.reduce((sum, crop) => sum + (crop.in_storage_total_t || 0), 0);
   const incomingTotal = incomingData.length;
 
+  // Build notifications when key insight values rise/drop beyond thresholds
+  useEffect(() => {
+    if (!currentFacility) return;
+
+    const snapshot = {
+      capacityUtilization: productionStats?.capacity_utilization ?? null,
+      inventoryTotal: Number.isFinite(inventoryTotal) ? inventoryTotal : null,
+      procurementTotal: Number.isFinite(procurementTotal) ? procurementTotal : null,
+      incomingTotal: Number.isFinite(incomingTotal) ? incomingTotal : null,
+    };
+
+    // On first load, just record snapshot without alerts
+    if (!previousSnapshot.current) {
+      previousSnapshot.current = snapshot;
+      return;
+    }
+
+    const prev = previousSnapshot.current;
+    const nextAlerts = [];
+    const makeId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    // Production: utilization change > 3 percentage points
+    if (snapshot.capacityUtilization !== null && prev.capacityUtilization !== null) {
+      const delta = snapshot.capacityUtilization - prev.capacityUtilization;
+      if (delta >= 3) {
+        nextAlerts.push({
+          id: makeId(),
+          type: "up",
+          title: "Production Insights",
+          message: `Capacity utilization is up ${delta.toFixed(1)} pts.`,
+        });
+      } else if (delta <= -3) {
+        nextAlerts.push({
+          id: makeId(),
+          type: "down",
+          title: "Production Insights",
+          message: `Capacity utilization dropped ${Math.abs(delta).toFixed(1)} pts.`,
+        });
+      }
+    }
+
+    // Supply: inventory change > 8% vs previous
+    if (snapshot.inventoryTotal !== null && prev.inventoryTotal !== null && prev.inventoryTotal > 0) {
+      const changePct = ((snapshot.inventoryTotal - prev.inventoryTotal) / prev.inventoryTotal) * 100;
+      if (changePct >= 8) {
+        nextAlerts.push({
+          id: makeId(),
+          type: "up",
+          title: "Supply Insights",
+          message: `Factory stock increased by ${changePct.toFixed(1)}%.`,
+        });
+      } else if (changePct <= -8) {
+        nextAlerts.push({
+          id: makeId(),
+          type: "down",
+          title: "Supply Insights",
+          message: `Factory stock dropped by ${Math.abs(changePct).toFixed(1)}%.`,
+        });
+      }
+    }
+
+    // Supply: incoming lots count change
+    if (snapshot.incomingTotal !== null && prev.incomingTotal !== null) {
+      const deltaIncoming = snapshot.incomingTotal - prev.incomingTotal;
+      if (deltaIncoming >= 3) {
+        nextAlerts.push({
+          id: makeId(),
+          type: "up",
+          title: "Supply Insights",
+          message: `${deltaIncoming} more lots are now inbound.`,
+        });
+      } else if (deltaIncoming <= -3) {
+        nextAlerts.push({
+          id: makeId(),
+          type: "down",
+          title: "Supply Insights",
+          message: `${Math.abs(deltaIncoming)} fewer lots are in transit.`,
+        });
+      }
+    }
+
+    // Bidding: procurement-ready stock change > 10%
+    if (snapshot.procurementTotal !== null && prev.procurementTotal !== null && prev.procurementTotal > 0) {
+      const changePct = ((snapshot.procurementTotal - prev.procurementTotal) / prev.procurementTotal) * 100;
+      if (changePct >= 10) {
+        nextAlerts.push({
+          id: makeId(),
+          type: "up",
+          title: "Bid & Buy",
+          message: `Storage-ready lots up by ${changePct.toFixed(1)}%.`,
+        });
+      } else if (changePct <= -10) {
+        nextAlerts.push({
+          id: makeId(),
+          type: "down",
+          title: "Bid & Buy",
+          message: `Storage-ready lots down by ${Math.abs(changePct).toFixed(1)}%.`,
+        });
+      }
+    }
+
+    if (nextAlerts.length) {
+      setAlerts((prevAlerts) => [...nextAlerts, ...prevAlerts].slice(0, 6));
+    }
+
+    previousSnapshot.current = snapshot;
+  }, [productionStats, inventoryTotal, procurementTotal, incomingTotal, currentFacility]);
+
+  const handleDismissAlert = (id) => {
+    setAlerts((prevAlerts) => prevAlerts.filter((a) => a.id !== id));
+  };
+
   if (loading) {
     return (
       <div className="container mt-5">
@@ -105,9 +228,9 @@ export default function ManufacturingDashboard() {
       {/* Header */}
       <div className="row mb-4">
         <div className="col">
-          <h2 className="mb-1">
+          <h2 className="mb-1 manufacturing-title">
             <i className="bi bi-factory me-2 text-primary"></i>
-            Manufacturing Dashboard
+            Manufacturer Dashboard
           </h2>
           <p className="text-muted mb-0">
             AI-powered value chain coordination for oilseed processing
@@ -127,6 +250,19 @@ export default function ManufacturingDashboard() {
           </select>
         </div>
       </div>
+
+      {currentFacility && (
+        <>
+          <InsightAlerts alerts={alerts} onDismiss={handleDismissAlert} />
+        <OperationsInsightsCard
+          facility={currentFacility}
+          productionStats={productionStats}
+          inventoryTotal={inventoryTotal}
+          procurementTotal={procurementTotal}
+          incomingTotal={incomingTotal}
+        />
+        </>
+      )}
 
       {/* Overview Dashboard */}
       {currentFacility && (

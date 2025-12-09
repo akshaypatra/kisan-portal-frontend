@@ -7,6 +7,7 @@ import {
   FaSeedling,
   //eslint-disable-next-line no-unused-vars
   FaNewspaper,
+  FaRegNewspaper,
   FaStore,
   FaChartLine,
   FaMap,
@@ -88,6 +89,12 @@ export default function Dashboard() {
       icon: <FaTruck size={32} />,
       path: "/new-book-transport",
       color: "#10b981",
+    },
+    {
+      name: "Insurance and Credit Schemes",
+      icon: <FaRegNewspaper size={32} />,
+      path: "/oilseed-credit-insurance-page",
+      color: "#19d2f3ff",
     },
   ];
 

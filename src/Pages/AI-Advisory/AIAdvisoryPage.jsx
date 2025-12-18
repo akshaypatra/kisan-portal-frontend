@@ -12,22 +12,23 @@ export default function AIAdvisoryPage() {
 
   const buttons = [
     {
-      key: "recommended-crops",
-      name: "Recommended Crops",
-      subtitle: "Smart crop selection",
-      icon: <FaStore size={30} />,
-      path: "/advisory/crop-recommendation",
-      color: "linear-gradient(135deg, #22c55e, #16a34a)",
-      accent: "#22c55e",
-      descColor: "rgba(34,197,94,0.12)",
+      key: "oilseed-planning",
+      name: "Oilseed Planning",
+      subtitle: "Specialized oilseed advisory",
+      icon: <FaTractor size={30} />,
+      path: "/advisory/plan-oil-seeds",
+      color: "linear-gradient(135deg, #facc15, #f59e0b)",
+      accent: "#f59e0b",
+      descColor: "rgba(250,204,21,0.13)",
       description:
-        "AI suggests top crops based on climate, region, season and demand.",
+        "Optimized oilseed suggestions using climate, NPK & pH data.",
       bullets: [
-        "Uses weather & region data",
-        "Demand & price forecast",
-        "Max-profit suggestions",
+        "Oilseed-specific AI",
+        "Schemes & subsidies",
+        "Climate-driven advice",
       ],
     },
+    
     {
       key: "crop-details",
       name: "Crop Details",
@@ -42,6 +43,23 @@ export default function AIAdvisoryPage() {
         "Sowing & harvesting guide",
         "Irrigation plan",
         "Pest & disease control",
+      ],
+    },
+    {
+      key: "recommended-crops",
+      name: "Recommended Crops",
+      subtitle: "Smart crop selection",
+      icon: <FaStore size={30} />,
+      path: "/advisory/crop-recommendation",
+      color: "linear-gradient(135deg, #22c55e, #16a34a)",
+      accent: "#22c55e",
+      descColor: "rgba(34,197,94,0.12)",
+      description:
+        "AI suggests top crops based on climate, region, season and demand.",
+      bullets: [
+        "Uses weather & region data",
+        "Demand & price forecast",
+        "Max-profit suggestions",
       ],
     },
     {
@@ -61,23 +79,7 @@ export default function AIAdvisoryPage() {
         "Multi-season smart planning",
       ],
     },
-    {
-      key: "oilseed-planning",
-      name: "Oilseed Planning",
-      subtitle: "Specialized oilseed advisory",
-      icon: <FaTractor size={30} />,
-      path: "/advisory/plan-oil-seeds",
-      color: "linear-gradient(135deg, #facc15, #f59e0b)",
-      accent: "#f59e0b",
-      descColor: "rgba(250,204,21,0.13)",
-      description:
-        "Optimized oilseed suggestions using climate, NPK & pH data.",
-      bullets: [
-        "Oilseed-specific AI",
-        "Schemes & subsidies",
-        "Climate-driven advice",
-      ],
-    },
+    
   ];
 
   return (

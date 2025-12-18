@@ -335,9 +335,9 @@ export default function Dashboard() {
     <div className="dashboard-container p-3">
       <AIVoiceAssistant />
 
-      <div className="dashboard-weather-widget-container mb-3">
+      {/* <div className="dashboard-weather-widget-container mb-3">
         <WeatherWidget />
-      </div>
+      </div> */}
 
       <div className="dashboard-button-container mb-3">
         <style>

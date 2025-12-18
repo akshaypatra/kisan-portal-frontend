@@ -7,6 +7,7 @@ import {
   FaSeedling,
   //eslint-disable-next-line no-unused-vars
   FaNewspaper,
+  FaRegNewspaper,
   FaStore,
   FaChartLine,
   FaMap,
@@ -88,6 +89,12 @@ export default function Dashboard() {
       icon: <FaTruck size={32} />,
       path: "/new-book-transport",
       color: "#10b981",
+    },
+    {
+      name: "Insurance and Credit Schemes",
+      icon: <FaRegNewspaper size={32} />,
+      path: "/oilseed-credit-insurance-page",
+      color: "#19d2f3ff",
     },
   ];
 
@@ -328,9 +335,9 @@ export default function Dashboard() {
     <div className="dashboard-container p-3">
       <AIVoiceAssistant />
 
-      <div className="dashboard-weather-widget-container mb-3">
+      {/* <div className="dashboard-weather-widget-container mb-3">
         <WeatherWidget />
-      </div>
+      </div> */}
 
       <div className="dashboard-button-container mb-3">
         <style>

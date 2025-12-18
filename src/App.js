@@ -40,6 +40,7 @@ import OilSeedAdvisory from './Components/AI-advisory-Components/OilSeedAdvisory
 import NewBookTransportPage from './Pages/Farmers/NewBookTransportPage';
 import PalmOilClusterPlanner from './Pages/PalmOilClusterPlanner';
 import BuyCropsPage from './Pages/Vendors/BuyCropsPage';
+import OilseedCreditInsurancePage from './Pages/Government/OilseedCreditInsurancePage';
 
 function App() {
   return (
@@ -93,6 +94,7 @@ function App() {
             <Route path='/advisory/crop-recommendation' element={<FavorableCrops/>}/>
             <Route path='/advisory/plan-crops' element={<PlanCropsAdvisory/>}/>
             <Route path='/advisory/plan-oil-seeds' element={<OilSeedAdvisory/>}/>
+            <Route path='/oilseed-credit-insurance-page' element={<OilseedCreditInsurancePage/>}/>
           </Routes>
         </section>
 

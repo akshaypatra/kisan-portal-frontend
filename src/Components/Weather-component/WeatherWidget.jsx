@@ -22,7 +22,7 @@ import {
 // ⚠️ Dev only: move this key to backend / env variable in real app
 const GOOGLE_WEATHER_API_KEY = 'AIzaSyANvoVWdwZhYshqOhx6dNJR90nrInqfBy8';
 
-// Default: Rourkela, Odisha
+// Default coords if not overridden (only for API call, not for data)
 const DEFAULT_LAT = 22.255985;
 const DEFAULT_LNG = 84.8156292;
 
@@ -50,120 +50,66 @@ const IconMap = {
 };
 
 function getWeatherIcon(condition) {
-  if (!condition) return IconMap.Cloudy({});
+  if (!condition) return <WiCloud size={72} color="#B0C4DE" />;
+
   const c = condition.toLowerCase();
-  if (c.includes("clear") && c.includes("night")) return IconMap["Clear Night"]({});
-  if (c.includes("clear") || c.includes("sunny")) return IconMap.Sunny({});
-  if (c.includes("cloud") && c.includes("part")) return IconMap["Partly Cloudy"]({});
-  if (c.includes("cloud")) return IconMap.Cloudy({});
-  if (c.includes("rain") || c.includes("shower")) return IconMap.Rain({});
-  if (c.includes("thunder")) return IconMap.Thunderstorm({});
-  if (c.includes("snow")) return IconMap.Snow({});
-  return IconMap.Cloudy({});
+  if (c.includes('clear') && c.includes('night')) return <WiNightClear size={72} color="#FFD166" />;
+  if (c.includes('clear') || c.includes('sunny')) return <WiDaySunny size={72} color="#FFD166" />;
+  if (c.includes('cloud') && c.includes('part')) return <WiCloudy size={72} color="#FFE8A1" />;
+  if (c.includes('cloud')) return <WiCloud size={72} color="#B0C4DE" />;
+  if (c.includes('rain') || c.includes('shower')) return <WiRain size={72} color="#76C7F0" />;
+  if (c.includes('thunder')) return <WiThunderstorm size={72} color="#9EC5FE" />;
+  if (c.includes('snow')) return <WiSnow size={72} color="#BCE5F7" />;
+  return <WiCloud size={72} color="#B0C4DE" />;
 }
 
-const DEG = "\u00b0";
+const DEG = '\u00b0';
 
-const DEFAULT_LOCATION = {
-  name: "Rourkela",
-  admin1: "Odisha",
-  country: "IN",
-  latitude: 22.237,
-  longitude: 84.864,
-};
+const DayPill = ({ day, iconComponent, hi, lo }) => {
+  const hiDisplay = hi != null ? `${hi}${DEG}C` : '—';
+  const loDisplay = lo != null ? `${lo}${DEG}C` : '—';
 
-const ALERT_THRESHOLDS = {
-  precipProbability: 70, // %
-  precipAmount: 8, // mm/hr
-};
-
-const weatherCodeMap = {
-  0: "Clear",
-  1: "Mainly Clear",
-  2: "Partly Cloudy",
-  3: "Cloudy",
-  45: "Fog",
-  48: "Fog",
-  51: "Light Drizzle",
-  53: "Drizzle",
-  55: "Heavy Drizzle",
-  56: "Freezing Drizzle",
-  57: "Freezing Drizzle",
-  61: "Light Rain",
-  63: "Rain",
-  65: "Heavy Rain",
-  66: "Freezing Rain",
-  67: "Freezing Rain",
-  71: "Snow",
-  73: "Snow",
-  75: "Heavy Snow",
-  77: "Snow Grains",
-  80: "Rain Showers",
-  81: "Rain Showers",
-  82: "Heavy Showers",
-  85: "Snow Showers",
-  86: "Snow Showers",
-  95: "Thunderstorm",
-  96: "Thunderstorm",
-  99: "Thunderstorm",
-};
-
-const DayPill = ({ day, iconComponent, hi, lo }) => (
-  <div
-    className="day-pill d-flex flex-column align-items-center me-3"
-    style={{ minWidth: 88 }}
-  >
-    <div className="fw-bold small text-white text-center">{day}</div>
-    <div className="my-1">{iconComponent}</div>
-    <div className="text-white small fw-semibold">
-      {hi}°C / {lo}°C
+  return (
+    <div
+      className="day-pill d-flex flex-column align-items-center me-3"
+      style={{ minWidth: 88 }}
+    >
+      <div className="fw-bold small text-white text-center">{day}</div>
+      <div className="my-1">{iconComponent}</div>
+      <div className="text-white small fw-semibold">
+        {hiDisplay} / {loDisplay}
+      </div>
     </div>
-  </div>
-);
-
-export const defaultData = {
-  location: 'Rourkela, IN',
-  condition: 'Clear Sky',
-  temp: 15,
-  wind: '0 m/s',
-  precip: '0 mm/hr',
-  pressure: '1018 mb',
-  days: [
-    { d: "SAT", hi: 32, lo: 24, cond: "Partly Cloudy" },
-    { d: "SUN", hi: 31, lo: 23, cond: "Cloudy" },
-    { d: "MON", hi: 30, lo: 22, cond: "Cloudy" },
-    { d: "TUE", hi: 29, lo: 22, cond: "Cloudy" },
-    { d: "WED", hi: 29, lo: 21, cond: "Partly Cloudy" },
-    { d: "THU", hi: 30, lo: 22, cond: "Partly Cloudy" },
-  ],
+  );
 };
 
-function mapGoogleToWidget(googleData, fallbackLocation = 'Rourkela, IN') {
+/**
+ * Map Google Weather API response → widget data
+ * Returns `null` if API doesn't give usable forecastDays (no fake defaults).
+ */
+function mapGoogleToWidget(googleData, fallbackLocationLabel) {
   const days = googleData?.forecastDays || [];
-  if (!days.length) return defaultData;
+  if (!days.length) return null; // 🚫 no fabricated data
 
   const first = days[0];
 
-  // Temperature
-  const max = first.maxTemperature?.degrees ?? null;
-  const feels = first.feelsLikeMaxTemperature?.degrees ?? max ?? 24;
+  const feels =
+    first.feelsLikeMaxTemperature?.degrees ??
+    first.maxTemperature?.degrees ??
+    null;
 
-  // Condition text from daytime forecast
   const condText =
-    first.daytimeForecast?.weatherCondition?.description?.text || 'Clear';
+    first.daytimeForecast?.weatherCondition?.description?.text || '';
 
-  // wind & precip from daytime forecast
-  const windSpeed =
-    first.daytimeForecast?.wind?.speed?.value != null
-      ? `${first.daytimeForecast.wind.speed.value} km/h`
-      : '—';
+  const windVal = first.daytimeForecast?.wind?.speed?.value ?? null; // assume km/h
+  const precipVal =
+    first.daytimeForecast?.precipitation?.qpf?.quantity ?? null; // mm (per day/period, as API defines)
 
-  const precipQty =
-    first.daytimeForecast?.precipitation?.qpf?.quantity != null
-      ? `${first.daytimeForecast.precipitation.qpf.quantity} mm`
-      : '—';
+  const pressureVal =
+    first.daytimeForecast?.pressureMillibars ??
+    first.pressureMillibars ??
+    null;
 
-  // Build day pills
   const widgetDays = days.slice(0, 7).map((dObj) => {
     let label = 'DAY';
     if (dObj.displayDate) {
@@ -176,38 +122,41 @@ function mapGoogleToWidget(googleData, fallbackLocation = 'Rourkela, IN') {
       }
     }
 
-    const hi = dObj.maxTemperature?.degrees ?? 0;
-    const lo = dObj.minTemperature?.degrees ?? 0;
+    const hi = dObj.maxTemperature?.degrees ?? null;
+    const lo = dObj.minTemperature?.degrees ?? null;
 
     const cond =
-      dObj.daytimeForecast?.weatherCondition?.description?.text || condText;
+      dObj.daytimeForecast?.weatherCondition?.description?.text ||
+      condText ||
+      '';
 
     return {
       d: label,
-      hi: Math.round(hi),
-      lo: Math.round(lo),
+      hi: hi != null ? Math.round(hi) : null,
+      lo: lo != null ? Math.round(lo) : null,
       cond,
     };
   });
 
   return {
-    location: fallbackLocation,
-    condition: condText,
-    temp: Math.round(feels),
-    wind: windSpeed,
-    precip: precipQty,
-    pressure: '—',
+    // We use your label for display, because Google data may not have nice human-readable name
+    locationLabel: fallbackLocationLabel,
+    condition: condText || '',
+    temp: feels != null ? Math.round(feels) : null,
+    wind: windVal,      // number or null
+    precip: precipVal,  // number or null
+    pressure: pressureVal, // number or null
     days: widgetDays,
   };
 }
 
 export default function WeatherMiniWidget({
-  // You can override lat/lng if you want another city
   latitude = DEFAULT_LAT,
   longitude = DEFAULT_LNG,
+  // Just a label for the UI; not "weather data"
   locationLabel = 'Rourkela, IN',
 }) {
-  const [data, setData] = useState(defaultData);
+  const [data, setData] = useState(null); // null until Google API fills it
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -226,11 +175,18 @@ export default function WeatherMiniWidget({
 
         const json = await res.json();
         const mapped = mapGoogleToWidget(json, locationLabel);
-        setData(mapped);
+
+        if (!mapped) {
+          // API responded but no usable forecast
+          setError('No forecast data returned by Google Weather API.');
+          setData(null);
+        } else {
+          setData(mapped);
+        }
       } catch (err) {
         console.error('Weather API error:', err);
-        setError(err.message || 'Failed to load weather');
-        setData((prev) => ({ ...prev, location: locationLabel }));
+        setError(err.message || 'Failed to load weather from Google.');
+        // do not inject any fake data; keep whatever previous state we had
       } finally {
         setLoading(false);
       }
@@ -238,6 +194,22 @@ export default function WeatherMiniWidget({
 
     fetchWeather();
   }, [latitude, longitude, locationLabel]);
+
+  const hasData = !!data;
+
+  const tempDisplay =
+    hasData && data.temp != null ? `${data.temp}${DEG}C` : '—';
+
+  const windDisplay =
+    hasData && data.wind != null ? `${data.wind} km/h` : '—';
+
+  const precipDisplay =
+    hasData && data.precip != null ? `${data.precip} mm` : '—';
+
+  const pressureDisplay =
+    hasData && data.pressure != null ? `${data.pressure} mb` : '—';
+
+  const conditionText = hasData && data.condition ? data.condition : '';
 
   return (
     <div
@@ -307,67 +279,86 @@ export default function WeatherMiniWidget({
       <div className="wm-card d-flex flex-wrap align-items-start">
         {loading && <div className="wm-loading-tag">Loading…</div>}
 
-        {/* left icon */}
-        <div className="wm-left me-3 align-self-start">
-          <div
-            style={{
-              width: 84,
-              height: 84,
-              borderRadius: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {getWeatherIcon(data.condition)}
-          </div>
-          <div className="wm-condition">{data.condition}</div>
-          <div className="small text-white-50">Updated for {data.location}</div>
-        </div>
-
-        {/* center block */}
-        <div style={{ flex: "1 1 360px", minWidth: 220 }} className="px-2 text-center">
-          <div className="text-center mb-1">
-            <div className="fw-bold" style={{ fontSize: 22 }}>
-              {data.location}
+        {hasData ? (
+          <>
+            {/* left icon & condition */}
+            <div className="wm-left me-3 align-self-start">
+              <div
+                style={{
+                  width: 84,
+                  height: 84,
+                  borderRadius: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {getWeatherIcon(conditionText)}
+              </div>
+              <div className="wm-condition">{conditionText}</div>
+              <div className="small text-white-50">
+                Updated for {data.locationLabel}
+              </div>
             </div>
-          </div>
 
-      <div className="d-flex align-items-center justify-content-center mb-2">
-            <div className="wm-temp">
-              {data.temp}
-              {DEG}C
+            {/* center block */}
+            <div
+              style={{ flex: '1 1 360px', minWidth: 220 }}
+              className="px-2 text-center"
+            >
+              <div className="text-center mb-1">
+                <div className="fw-bold" style={{ fontSize: 22 }}>
+                  {data.locationLabel}
+                </div>
+              </div>
+
+              <div className="d-flex align-items-center justify-content-center mb-2">
+                <div className="wm-temp">{tempDisplay}</div>
+              </div>
+
+              <div className="day-strip mt-2">
+                {data.days.map((day, idx) => (
+                  <DayPill
+                    key={idx}
+                    day={day.d}
+                    iconComponent={getWeatherIcon(day.cond)}
+                    hi={day.hi}
+                    lo={day.lo}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="day-strip mt-2">
-            {data.days.map((day, idx) => (
-              <DayPill
-                key={idx}
-                day={day.d}
-                iconComponent={getWeatherIcon(day.cond)}
-                hi={day.hi}
-                lo={day.lo}
-              />
-            ))}
+            {/* right metrics */}
+            <div className="wm-metrics ps-3 pt-1">
+              {error && <div className="small text-warning mb-2">{error}</div>}
+              <div className="small fw-bold">
+                Wind: <span className="fw-normal">{windDisplay}</span>
+              </div>
+              <div className="small fw-bold">
+                Precip: <span className="fw-normal">{precipDisplay}</span>
+              </div>
+              <div className="small fw-bold">
+                Pressure: <span className="fw-normal">{pressureDisplay}</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          // No data yet (initial load or API issue)
+          <div className="w-100 text-center">
+            <div className="fw-bold mb-1">{locationLabel}</div>
+            <div>
+              {loading
+                ? 'Loading weather data from Google…'
+                : 'No weather data available.'}
+            </div>
+            {error && (
+              <div className="small text-warning mt-2">
+                {error}
+              </div>
+            )}
           </div>
-        </div>
-
-        {/* right metrics */}
-        <div className="wm-metrics ps-3 pt-1">
-          {error && (
-            <div className="small text-warning mb-2">{error}</div>
-          )}
-          <div className="small fw-bold">
-            Wind: <span className="fw-normal">{data.wind}</span>
-          </div>
-          <div className="small fw-bold">
-            Precip: <span className="fw-normal">{data.precip}</span>
-          </div>
-          <div className="small fw-bold">
-            Pressure: <span className="fw-normal">{data.pressure}</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
